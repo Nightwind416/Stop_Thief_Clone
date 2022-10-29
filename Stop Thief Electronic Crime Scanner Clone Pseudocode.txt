@@ -1,0 +1,72 @@
+
+
+Stop Thief Clue Scanner Digital Clone
+----
+
+Board
+    Grid system for movement
+        numberd spaces for criminal movement/tracking
+    19 'Crime Locations'
+    4 Buildings
+        1. Furs
+        2. Jewelry
+        3. Antiques
+        4. Bank
+    Streets between and around the Buildings
+    Subway 'shortcuts' in center and corners
+
+Detectives
+    player tokens
+    movement -  Detectives must count every space (grid square)
+
+Bank
+    Reward Value
+    Player accounts
+
+Sleuth Cards
+    ...
+
+Crime Scanner
+    Sound Clues
+        different sounds for different criminal activities/movements
+            Floor steps - floor space within a building
+            Door creak - door space
+            Glass break - window space
+            Street - street space
+            Subway - indicates taking subway 'somewhere'
+                follow by at least 1 street, can not end turn on subway space
+            Nothing/beep - criminal doesn't move
+    Tracks criminal movement 'covertly'
+        Criminal can move 'faster' than detectives on the board by using the 'numbered' spaces
+            generally equivelent to 2x the detective movement
+        can 'replay' up to 9 previous steps (10 steps counting current and previous)
+            *limitation of the device
+    Tip - pay to get exact Locations
+    Arrest - attempt to apprehend
+        Criminal has a chance to escape
+            Increases bounty and allows several 'free' moves to 'get away'
+
+
+Thief movement
+    When
+        Each time a 'clue' is requested
+        After unsuccessful Arrest
+    Direction
+        Up/Down/Left/Right and diagonally beteen those
+            Always 2 'board spaces', moving from 1 numbered space to another numbered space
+            Diagonal movement can be used to access a door or window, crossing over what may appear as a 'half space' visually on the board grid (generlly due to a diagonal wall at that location)
+        Exceptions
+            Will not immediately 'backtrack' or return to the previous numbered space on the very next turn
+                Could backtrack within 3 steps (triangle move pattern)
+    Other Rules
+        After breaking a window or opening a door, the next movment MUST be 'through' the space, not back to the previous (similar to backtracking exception)
+        Thief will not go through/over walls
+        When inside a building, if the thief comes within 1 space of a crime location, he will always commit the crime on the next move
+            Note1: once a crime location has been 'triggered' it becomes a 'floor' space until the thief leaves the building (all building crime locations that may have been triggerd are reset)
+            Note2: once the newsstand is robbed, it will close and become a 'street' space until the thief is arrested and a new thief is on the loose
+    Subway use
+        If the thief ends their turn at the space in front of a corner or the center subway, they always take it on their next turn
+            After riding, they will exit onto the street directly in front of the subway
+                They MAY even return to the same subway station during the 'ride', and thus same numbered street space (allowed to violate the backtrack exception here)
+    Escape Arrest
+        Thief will move 5 to 6 times if they escape arrest, possibly committing additional crime along the way
