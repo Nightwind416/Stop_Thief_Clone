@@ -1,0 +1,72 @@
+https://stackoverflow.com/questions/67392814/need-help-storing-deck-of-cards-in-a-list-and-giving-them-their-respective-integ
+
+You can make a Card class. This might be new if you are new to programming, but it's not super complicated and has a lot of advantages — it makes your code more readable and lets you define data and behavior in one structure. I've added some comments under the methods to help. A class will let you make individual instances of the cards that encapsulate date like the value and range. Additionally you can add behavior, like what happens when you print a card or add two cards together. Here's a rough start:
+
+class Card:
+    suits = {
+        'c': '♣',
+        'h': '♥',
+        's': '♠',
+        'd': '♦'
+    }
+    faces = {
+        1: 'Ace',
+        11: 'Jack',
+        12: 'Queen',
+        13: 'King'
+    }
+    def __init__(self, rank, suit):
+        '''Called when you create a new card. For example `Card(10, 'h')`'''
+        self.rank = rank
+        self.suit = suit
+    
+    def __repr__(self):
+        '''A string representation of the card'''
+        face = self.faces.get(self.rank, self.rank)
+        return f'{face}{self.suits[self.suit]}'
+        
+    def __add__(self, other):
+        '''What happens when you add a card to another (or to an integer)
+           For example this_card + someOther_card'''
+        if isinstance(other, int):
+            return self.rank + other
+        return self.rank + other.rank
+
+    def __radd__(self, other):
+        '''What happens when you add another or integer to this card. 
+           For example `someOther_card + this_card`'''
+        if isinstance(other, int):
+            return other + self.rank
+        return self.rank + other.rank
+    
+
+
+Now you can use it.
+
+Make a new card:
+    acard = Card(10, 'h')
+    print(acard)
+    # 10♥
+    acard.rank
+    # 10
+
+Make a full deck:
+    sorted_deck = [Card(n, s) for s in Card.suits for n in range(1, 14)]
+
+    len(sorted_deck)
+    # 52
+    sorted_deck[10: 15] # take a slice of the deck
+    # [Jack♣, Queen♣, King♣, Ace♥, 2♥]
+
+Shuffle it and draw a hand of 7:
+    from random import shuffle
+
+    shuffle(sorted_deck)
+    sorted_deck[0:7]
+    # [4♣, 3♣, 10♥, 8♥, 7♦, 3♥, 2♠]
+
+Sum the values of some card:
+    cards = [Card(9, 'h'), Card(11, 'd'), Card(1, 's')]
+
+    sum(cards)
+    # 21
