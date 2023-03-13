@@ -5,9 +5,9 @@ Stop Thief Clue Scanner Digital Clone
 
 Board
     Grid system for movement
-        numberd spaces for criminal movement/tracking
+        numberd buildings and spaces for thief movement/tracking
     19 'Crime Locations'
-    4 Buildings
+    4 Buildings with multiple crime locations, floor spaces, doors, and windows
         1. Furs
         2. Jewelry
         3. Antiques
@@ -70,3 +70,13 @@ Thief movement
                 They MAY even return to the same subway station during the 'ride', and thus same numbered street space (allowed to violate the backtrack exception here)
     Escape Arrest
         Thief will move 5 to 6 times if they escape arrest, possibly committing additional crime along the way
+
+
+Basic Game Loop
+    Player setup
+    Begin Game
+        Round
+            New Thief
+            Take Turns
+                Arrest
+                    Win Game/New Round
