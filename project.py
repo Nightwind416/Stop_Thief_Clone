@@ -1,45 +1,27 @@
 import random
+import csv
 
-# Standard inputs for AREPL, remove or comment out when compiling
-standard_input = ["3", "clue"]
+# Dictionary of sleuth cards
+sleuth_cards = {
+    'Take another Turn': 3,
+    'Lose a turn': 3,
+    'Move Anywhere': 2,
+    'Move 3 Extra Spaces': 1,
+    'Move 4 Extra Spaces': 2,
+    'Move 5 Extra Spaces': 1,
+    'Move 6 Extra Spaces': 1,
+    'Free Tip': 4,
+    'Buy a Tip for $50': 3,
+    'Buy a Tip for $100': 2,
+    'Get 3 Extra Clues': 1,
+    'Get 4 Extra Clues': 1,
+    'Get 5 Extra Clues': 1,
+    'Get 6 Extra Clues': 1,
+    'Collect $100 from another Detective': 2,
+    'Collect $200 from another Detective': 2,
+    'Back to the Acme Detective Agency (You or another Detective)': 2,
+}
 
-
-
-# List of sleuth cards
-sleuth_cards = [
-    'Take another Turn',
-    'Take another Turn',
-    'Take another Turn',
-    'Lose a turn',
-    'Lose a turn',
-    'Lose a turn',
-    'Move Anywhere',
-    'Move Anywhere',
-    'Move 3 Extra Spaces',
-    'Move 4 Extra Spaces',
-    'Move 4 Extra Spaces',
-    'Move 5 Extra Spaces',
-    'Move 6 Extra Spaces',
-    'Free Tip',
-    'Free Tip',
-    'Free Tip',
-    'Free Tip',
-    'Buy a Tip for $50',
-    'Buy a Tip for $50',
-    'Buy a Tip for $50',
-    'Buy a Tip for $100',
-    'Buy a Tip for $100',
-    'Get 3 Extra Clues',
-    'Get 4 Extra Clues',
-    'Get 5 Extra Clues',
-    'Get 6 Extra Clues',
-    'Collect $100 from another Detective',
-    'Collect $100 from another Detective',
-    'Collect $200 from another Detective',
-    'Collect $200 from another Detective',
-    'Back to the Acme Detective Agency (You or another Detective)',
-    'Back to the Acme Detective Agency (You or another Detective)',
-    ]
 
 # List of detective IDs
 detective_ids = [
@@ -53,8 +35,9 @@ detective_ids = [
     "Nanny Harrow",
     ]
 
-# Ddictionary of wanted names and values
-wanted_list = {
+
+# Dictionary of thief names and wanted values
+thief_list = {
     "Armand Slinger": 900,
     "Bunny & Clod": 1000,
     "Emil 'The Cat' Donovan": 800,
@@ -69,22 +52,32 @@ wanted_list = {
 
 
 # Player move list
-move_list = ["clue", "roll", "arrest", "use sleuth card", "end turn"]
+player_move_list = [
+    "Free Clue",
+    "Roll Dice",
+    "Attempt Arrest",
+    "Use Sleuth Card",
+    "Last 10 Clues",
+    "End Turn"
+    ]
 
 
-# Thief class - has name, wanted value, captured status, additional crimes, location
+# Thief class - name, wanted value, captured status, additional crimes, current location
 class thief:
-    def __init__(self, name, location):
+    def __init__(self, name, space_number):
         self.name = name
         self.captured_status = False
         self.additional_crimes = 0
         self.succesful_escapes = 0
-        self.location = location
-        self.bounty = 0
+        self.space_number = space_number
+        self.bounty = thief_list.get(name)
         self.arresting_detective = None
+        self.clue_list = []
     def __str__(self):
         return self.name
     # Increase bounty by amount
+    def set_location(self, space_number):
+        self.space_number = space_number
     def increase_bounty(self, amount):
         self.bounty += amount
     # Increase crime count
@@ -93,15 +86,18 @@ class thief:
     # Increase escape count
     def increase_escapes(self):
         self.succesful_escapes += 1
-    # Set location
-    def set_location(self, location):
-        self.location = location
     # Set captured status
     def set_captured_status(self, status):
         self.captured_status = status
     # Set arresting detective
     def set_arresting_detective(self, detective):
         self.arresting_detective = detective
+    def set_clue_list(self, clue_type):
+        if len(self.clue_list) < 10:
+            self.clue_list.append(clue_type)
+        else:
+            self.clue_list.append(clue_type)
+            self.clue_list.pop(0)
     # Get current bounty
     def get_bounty(self):
         return self.bounty
@@ -112,120 +108,172 @@ class thief:
     def get_escapes(self):
         return self.succesful_escapes
     # Get current location
-    def get_location(self):
-        return self.location
+    def get_general_location(self):
+        with open('thief_valid_moves_list.csv', 'r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                if row['space_number'] == str(self.space_number):
+                    return row['location']
+    def get_location_type(self):
+        with open('thief_valid_moves_list.csv', 'r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                if row['space_number'] == str(self.space_number):
+                    return row['space_type']
+    def get_exact_location(self):
+        return self.space_number
     # Get captured status
     def get_captured_status(self):
         return self.captured_status
     # Get arresting detective
     def get_arresting_detective(self):
         return self.arresting_detective
+    def get_clue_list(self):
+        return self.clue_list
 
 
-# Player class - has a detective name, list of held cards, current winnings, arrested thieves list
+# Player class - detective name, list of held cards, current cash, arrested thieves list
 class player:
-    def __init__(self, name):
+    def __init__(self, player_number, name):
+        self.player_number = player_number
         self.name = name
         self.held_cards = []
-        self.winnings = 0
+        self.cash = 300
         self.arrested_thieves = []
     def __str__(self):
         return self.name
 
 
-
 def main():
-    # Begin a new game
-    new_game()
-    # Begin a new round of the game
-    new_round()
-    # Game loop
-    while True:
-        # Check if thief is captured or not
-        # If thief is captured, end round
-        # If thief is not captured, continue
-        # Loop through each player
-        for player in players:
-            # Call player turn function
-            player_turn(player)
-            # Check if thief is captured or not
-            # If thief is captured, end round
-            # If thief is not captured, continue
+    # Game setup, like player number
+    game_setup()
+    # Begin a new game with current setup
+    play_game()
+    # Show Results
+    results()
+    # Play again?
+    play_again()
+    # Quit game
+    end_game()
 
 
-
-
-def new_game():
+def game_setup():
     # Ask for the number of players
-    players = int(input("How many players?"))
-    print("There are " + str(players) + " players.")
-    # Loop through each player choosing a detective ID and add to a player list
-    for i in range(players):
-        # Choose a detective ID
-        detective = random.choice(detective_ids)
+    global number_players
+    number_players = int(input("How many players?"))
+    print("There are " + str(number_players) + " players.")
+    # Loop through each player asking to choose one of the detective IDs from the list
+    global player_list
+    player_list = []
+    for i in range(number_players):
+        # Create a numbered list of detective IDs
+        id_list = "\n".join([f"{j+1}. {id}" for j, id in enumerate(detective_ids)])
+        # Ask player to choose a detective ID
+        detective_choice = int(input(f"Player {i+1}, choose a detective ID by entering the corresponding number:\n{id_list}\n")) - 1
         # Remove detective ID from list
-        detective_ids.remove(detective)
+        chosen_id = detective_ids.pop(detective_choice)
         # Create a new player
-        new_player = player(detective)
+        new_player = player(i + 1, chosen_id)
         # Add new player to player list
-        players.append(new_player)
-        # Print new player
-        print("Player " + str(i + 1) + ": " + new_player.name)
-        print("Winnings: " + str(new_player.winnings))
-        print("Arrested Thieves: " + str(new_player.arrested_thieves))
-        print("Held Cards: " + str(new_player.held_cards))
-
-
-
-def new_round():
-    # Create a new thief from the wanted list
-    new_thief = thief(random.choice(list(wanted_list.keys())), "placeholder_location")
-    print("The new thief is " + new_thief.name + "!")
-    print("Name: " + new_thief.name)
-    print("Captured Status: " + str(new_thief.captured_status))
-    print("Additional Crimes: " + str(new_thief.additional_crimes))
-    print("Succesful Escapes: " + str(new_thief.succesful_escapes))
-    print("Location: " + new_thief.location)
-    print("Current Bounty: " + str(new_thief.bounty))
-    print("Arresting Detective: " + str(new_thief.arresting_detective))
-
-
-
-
-
-def player_turn(player):
-    # Ask for player if ready to take their turn
-    # ready_check = input("Player " + player.name + ", are you ready for your clue?")
-    player_input = input("What would you like to do?")
-    print("You chose to " + player_input + ".")
-    # If player input is to move
-    # If player input is to sleuth
-    # If player input is to arrest
-    # If player input is to end turn
-    # If player input is to end game
+        player_list.append(new_player)
+    # Print Welcome message
+    detective_names = ", ".join([str(p.name) for p in player_list[:-1]]) + ", and " + str(player_list[-1].name)
+    print("Detectives " + detective_names + " have joined the hunt.")
+    print("Each detective has been given $" + str(player_list[-1].cash) + " starting cash.")
     return
 
 
+def play_game():
+    # Create a new thief from the wanted list and set the starting crime space
+    with open("thief_valid_moves_list.csv", 'r') as f:
+        reader = csv.DictReader(f)
+        crime_locations = [row['space_number'] for row in reader if row['space_type'] == 'Crime']
+        crime_locations.remove('709')
+    global new_thief
+    new_thief = thief(random.choice(list(thief_list.keys())), random.choice(crime_locations))
+    new_thief.set_clue_list("Crime")
+    print("A new thief named " + new_thief.name + " has been detected committing a crime somehwere in " + new_thief.get_general_location())
+    print("Their current arrest reward is: " + str(new_thief.bounty))
+    # Take turns until thief arrested
+    player_number = 1
+    print("Player number: " + str(player_number) + "   Number of players: " + str(number_players))
+    while True:
+        # player turn
+        print("Player " + str(player_number) + ", it is your turn.")
+        player_turn(player_number)
+        # next player
+        player_number += 1
+        print("Player number: " + str(player_number) + "   Number of players: " + str(number_players))
+        if player_number > number_players:
+            player_number = 1
+        print("Next player up, player " + str(player_number) + ", it is your turn.")
+    return
 
-#     rand(thief)
-#     rand(crime_location)
-#     building_name = building_name(crime_location)
-#     print(f"A crime was committed in Building {Building name}")
 
-#     # Report thief name, value, and Building
-#     print("Thief: " + current_thief["name"])
-#     print("Value: " + current_thief["value"])
-#     print("Building: " + current_thief["location"])
+def player_turn(player_number):
+    end_turn = False
+    turn_move_list = player_move_list.copy()
+    global new_thief
+    while end_turn == False:
+        # Create a numbered list of player turn options
+        turn_options = "\n".join([f"{i+1}. {move}" for i, move in enumerate(turn_move_list)])
+        # Ask player pick an option
+        turn_choice_number = int(input(f"Pick an option by entering the corresponding number:\n{turn_options}\n")) - 1
+        turn_choice = turn_move_list[turn_choice_number]
+        if turn_choice == 'Free Clue':
+            free_clue = get_clue(1)
+            # Update choice list for this turn
+            free_clue = "Free Clue Received this turn: " + str(free_clue) + "    Use a Sleuth Card to receive more clues."
+            turn_move_list[0] = free_clue
+        elif turn_choice == 'Roll Dice':
+            dice_roll = random.randint(1, 6)
+            print("You rolled a", dice_roll)
+            # Update choice list for this turn
+            roll_reminder = "Rolled this turn: " + str(dice_roll) + "    Use a Sleuth Card to roll again."
+            turn_move_list[1] = roll_reminder
+        elif turn_choice == 'Attempt Arrest':
+            arrest_attempt()
+        elif turn_choice == 'Use Sleuth Card':
+            use_sleuth_card()
+        elif turn_choice == 'Last 10 Clues':
+            print(new_thief.get_clue_list())
+        elif turn_choice == 'End Turn':
+            print("End Turn")
+            end_turn == True
+            break
+        else:
+            print("Invalid move choice, please try again.")
+    return
 
 
+def get_clue(number):
+    while number > 0:
+        # Random chance thief does nothing
+        if random.randint(1, 100) < 20:
+            print("The theif doesn't make a move")
+            clue_type = "No Movement"
+            number -= 1
+        else:
+            clue_type = thief_move()
+            number -= 1
+    return clue_type
 
 
-
-
-# def building_name(location):
-    
-
-
+def thief_move():
+    global new_thief
+    print("Thief current space: " + new_thief.get_exact_location())
+    with open("thief_valid_moves_list.csv", 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row['space_number'] == str(new_thief.get_exact_location):
+                valid_moves = [row['valid_move_{}'.format(i)] for i in range(1, 9) if row['valid_move_{}'.format(i)] != '']
+                print("Valid moves: " + str(valid_moves))
+                new_thief.set_location(random.choice(valid_moves))
+    print("Thief new space: " + new_thief.get_exact_location())
+    clue_type = new_thief.get_location_type()
+    new_thief.set_clue_list(clue_type)
+    # print("Clue type: " + str(clue_type))
+    return clue_type
 
 
 # def thief_move():
@@ -241,14 +289,8 @@ def player_turn(player):
 #                 update thief.location
 
 
-
-
-
-
-
-
-
-# def attempt_arrest(location):
+def arrest_attempt():
+    ...
 #     if location invalid
 #         print(f"Detective {detective.name}, you are docked $1000 for making a False Arrest! Check your notes and be more careful next time.")
 #         play false_arrest_sound
@@ -266,14 +308,8 @@ def player_turn(player):
 #         return False
 
 
-
-# def draw_card():
-#     rand(cards)
-#     return card
-
-
-
-
+def use_sleuth_card():
+    ...
 
 
 if __name__ == "__main__":
