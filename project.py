@@ -1,6 +1,14 @@
 import random
 import csv
 
+
+def standard_input():
+    yield 3
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+
 # Dictionary of sleuth cards
 sleuth_cards = {
     'Take another Turn': 3,
@@ -63,7 +71,7 @@ player_move_list = [
 
 
 # Thief class - name, wanted value, captured status, additional crimes, current location
-class thief:
+class Thief:
     def __init__(self, name, space_number):
         self.name = name
         self.captured_status = False
@@ -73,9 +81,15 @@ class thief:
         self.bounty = thief_list.get(name)
         self.arresting_detective = None
         self.clue_list = []
+        self.previous_space = "0"
+        self.valid_moves_dict = {}
+        with open('thief_valid_moves_list.csv', mode='r') as csv_file:
+            csv_reader = csv.DictReader(csv_file)
+            for row in csv_reader:
+                self.valid_moves_dict[row['space_number']] = row
     def __str__(self):
         return self.name
-    # Increase bounty by amount
+    # Set
     def set_location(self, space_number):
         self.space_number = space_number
     def increase_bounty(self, amount):
@@ -98,6 +112,8 @@ class thief:
         else:
             self.clue_list.append(clue_type)
             self.clue_list.pop(0)
+    def set_previous_space(self, space_number):
+        self.previous_space = space_number
     # Get current bounty
     def get_bounty(self):
         return self.bounty
@@ -109,17 +125,9 @@ class thief:
         return self.succesful_escapes
     # Get current location
     def get_general_location(self):
-        with open('thief_valid_moves_list.csv', 'r') as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                if row['space_number'] == str(self.space_number):
-                    return row['location']
+        return self.valid_moves_dict[str(self.space_number)]['location']
     def get_location_type(self):
-        with open('thief_valid_moves_list.csv', 'r') as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                if row['space_number'] == str(self.space_number):
-                    return row['space_type']
+        return self.valid_moves_dict[str(self.space_number)]['space_type']
     def get_exact_location(self):
         return self.space_number
     # Get captured status
@@ -130,10 +138,12 @@ class thief:
         return self.arresting_detective
     def get_clue_list(self):
         return self.clue_list
+    def get_previous_space(self):
+        return self.previous_space
 
 
 # Player class - detective name, list of held cards, current cash, arrested thieves list
-class player:
+class Player:
     def __init__(self, player_number, name):
         self.player_number = player_number
         self.name = name
@@ -173,7 +183,7 @@ def game_setup():
         # Remove detective ID from list
         chosen_id = detective_ids.pop(detective_choice)
         # Create a new player
-        new_player = player(i + 1, chosen_id)
+        new_player = Player(i + 1, chosen_id)
         # Add new player to player list
         player_list.append(new_player)
     # Print Welcome message
@@ -190,7 +200,7 @@ def play_game():
         crime_locations = [row['space_number'] for row in reader if row['space_type'] == 'Crime']
         crime_locations.remove('709')
     global new_thief
-    new_thief = thief(random.choice(list(thief_list.keys())), random.choice(crime_locations))
+    new_thief = Thief(random.choice(list(thief_list.keys())), random.choice(crime_locations))
     new_thief.set_clue_list("Crime")
     print("A new thief named " + new_thief.name + " has been detected committing a crime somehwere in " + new_thief.get_general_location())
     print("Their current arrest reward is: " + str(new_thief.bounty))
@@ -223,8 +233,8 @@ def player_turn(player_number):
         if turn_choice == 'Free Clue':
             free_clue = get_clue(1)
             # Update choice list for this turn
-            free_clue = "Free Clue Received this turn: " + str(free_clue) + "    Use a Sleuth Card to receive more clues."
-            turn_move_list[0] = free_clue
+            # free_clue = "Free Clue Received this turn: " + str(free_clue) + "    Use a Sleuth Card to receive more clues."
+            # turn_move_list[0] = free_clue
         elif turn_choice == 'Roll Dice':
             dice_roll = random.randint(1, 6)
             print("You rolled a", dice_roll)
@@ -262,31 +272,26 @@ def get_clue(number):
 def thief_move():
     global new_thief
     print("Thief current space: " + new_thief.get_exact_location())
+    print("Thief previous space: " + new_thief.get_previous_space())
     with open("thief_valid_moves_list.csv", 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            if row['space_number'] == str(new_thief.get_exact_location):
+            if row['space_number'] == str(new_thief.get_exact_location()):
                 valid_moves = [row['valid_move_{}'.format(i)] for i in range(1, 9) if row['valid_move_{}'.format(i)] != '']
                 print("Valid moves: " + str(valid_moves))
-                new_thief.set_location(random.choice(valid_moves))
+                if new_thief.get_previous_space() in valid_moves:
+                    valid_moves.remove(new_thief.get_previous_space())
+                    print("Amended valid moves: " + str(valid_moves))
+                new_location = random.choice(valid_moves)
+                new_thief.set_previous_space(new_thief.get_exact_location())
+                new_thief.set_location(new_location)
+                break
     print("Thief new space: " + new_thief.get_exact_location())
+    print("Thief new space type: " + new_thief.get_general_location())
     clue_type = new_thief.get_location_type()
     new_thief.set_clue_list(clue_type)
     # print("Clue type: " + str(clue_type))
     return clue_type
-
-
-# def thief_move():
-#     while True
-#         random_direction = rand(N/NE/E/SE/S/SW/W/NW)
-#         if random_direction location is valid
-#             update thief.location
-#             play location sound
-#             if new_location is crime
-#                 update thief.crimes
-#             if new_location is subway
-#                 exit_station at rand(station)
-#                 update thief.location
 
 
 def arrest_attempt():
