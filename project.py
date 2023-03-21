@@ -7,15 +7,28 @@ def standard_input():
     yield "y"
     yield 3
     yield 1
-    yield 4
     yield 1
-    yield 4
+    yield 3
+    yield 124
     yield 1
-    yield 4
     yield 1
-    yield 4
     yield 1
-    yield 4
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
+    yield 1
     yield 1
 
 
@@ -58,7 +71,11 @@ thief_list = {
 
 # Create a dictionary of valid moves
 valid_moves_dict = {
-    "113": {
+    "0": {
+        "General Location": "None",
+        "Space Type": "None",
+        "Valid Moves": ["None"],
+    },"113": {
         "General Location": "Building 1",
         "Space Type": "Door",
         "Valid Moves": ["123","124","503"],
@@ -988,8 +1005,8 @@ class Thief:
         self._additional_crimes = 0
         self._succesful_escapes = 0
         # self._starting_space = random.choice(list(thief_starting_crime_spaces))
-        self._starting_space = "123"
-        self._move_history = ["0", self._starting_space]
+        self._starting_space = "123" # !!! ONLY during testing, remove and use the random function just above for live
+        self._move_history = [self._starting_space]
         self._move_dictionary = valid_moves_dict.copy()
     # Return the thief name
     def __str__(self):
@@ -1000,9 +1017,6 @@ class Thief:
     # Return the total reward amount
     def get_total_reward(self):
         return self._starting_reward + (self._additional_crimes * 100) + (self._succesful_escapes * 100)
-    # Increase additional crime count
-    def increase_crime_count(self):
-        self._additional_crimes += 1
     # Return additional crime count
     def get_additional_crime_count(self):
         return self._additional_crimes
@@ -1014,9 +1028,11 @@ class Thief:
         return self._succesful_escapes
     # Add move to list
     def add_move_to_list(self, space_number):
-        # print("Adding " + space_number + " to the move history")
         self._move_history.append(space_number)
-        # print("Updated move history :" + str(self.get_move_history()))
+        print("The Thief has moved to a " + self.get_location_type() + ' space.')
+        if self._move_dictionary[space_number]['Space Type'] == 'Crime':
+            self._move_dictionary[space_number]['Space Type'] = 'Floor'
+            self._additional_crimes += 1
     # Return general location (Building/Street Number)
     def get_general_location(self):
         return self._move_dictionary[self._move_history[-1]]["General Location"]
@@ -1028,11 +1044,18 @@ class Thief:
         return self._move_history[-1]
     # Return previous space
     def get_previous_location(self):
-        return self._move_history[-2]
+        if len(self._move_history) == 1:
+            return self._move_history
+        else:
+            return self._move_history[-2]
     # Return move history
     def get_move_history(self):
-        replace space numbers with space types
-        return self._move_history[1:]
+        move_history_types_raw = []
+        for space_number in self._move_history:
+            space_type = self._move_dictionary[space_number]["Space Type"]
+            move_history_types_raw.append(space_type)
+            move_history_types_edited = ' -> '.join(move_history_types_raw)
+        return move_history_types_edited
     # Return valid moves
     def get_valid_moves(self):
         return self._move_dictionary[self._move_history[-1]]['Valid Moves']
@@ -1045,7 +1068,11 @@ def main():
             number_players = input("How many players? (1, 2, 3, 4)")
             # Begin a new game
             print("Beginning a new game with " + str(number_players) + " players.")
-            play_game(number_players)
+            winner, thief = play_game(number_players)
+            print("Congratulations to Player " + str(winner) + " on catching " + str(thief) + " with an original reward of $" + str(thief.get_starting_reward()) + ".")
+            print("They committed " + str(thief.get_additional_crime_count() + 1) + " total crimes and escaped arrest " + str(thief.get_escape_count()) + " total times.")
+            print("Their final arrest reward is $" + str(thief.get_total_reward()))
+            print()
         elif choice == 'n':
             # Quit game
             print("Quitting game...")
@@ -1061,25 +1088,26 @@ def play_game(number_players):
     print("Their current arrest reward is: $" + str(new_thief.get_starting_reward()))
     # Set the player number to start with player 1
     player_number = 1
-    print("Player " + str(player_number) + ", start the game! What would you like to do?")
     # Players take turns until the thief is arrested
     while True:
         # player turn
-        player_turn(new_thief)
+        winner = player_turn(new_thief, player_number)
+        if winner == True:
+            return player_number, new_thief
         # next player
         player_number += 1
         # Reset to player 1 after last player turn
-        if player_number > number_players:
+        if player_number > int(number_players):
             player_number = 1
-        print("Next player up! Player " + str(player_number) + ", it is your turn. What would you like to do?")
     return
 
 
-def player_turn(new_thief):
-    end_turn = False
-    while end_turn == False:
+def player_turn(new_thief, player_number):
+    while True:
         print()
-        print("Current move history :" + str(new_thief.get_move_history()))
+        print("Player " + str(player_number) + ", it is your turn. What would you like to do?")
+        print("Current thief move history : " + str(new_thief.get_move_history()))
+        print("Thief exact location: " + str(new_thief.get_exact_location())) # !!! for debugging, remove before live
         # Create a numbered list of player turn options
         turn_options = "\n".join([f"{i+1}. {move}" for i, move in enumerate(player_turn_options)])
         # Ask player pick an option
@@ -1087,58 +1115,54 @@ def player_turn(new_thief):
         turn_choice = player_turn_options[turn_choice_number]
         if turn_choice == 'Clue':
             # Random chance thief does nothing
-            if random.randint(1, 100) < 0: # !!! need to figure out a good %
-                print("The thief doesn't make a move")
+            if random.randint(1, 100) < 5: # !!! need to figure out a good %
+                print("The Thief remains at their current location this turn")
             else:
                 thief_move(new_thief)
         elif turn_choice == 'Tip':
             print(get_exact_location())
         elif turn_choice == 'Attempt Arrest':
-            attempt_arrest()
+            # Ask player to input the space number
+            print("On what space number are you attempting to arrest the Thief? (no names, spaces, or dashes)")
+            print("Example 1: For Building 1 Space 23 you would enter: 123")
+            print("Example 2: For Street 6-70 you would enter: 670")
+            arrest_space = input("Space Number?")
+            arrest_result = attempt_arrest(new_thief, arrest_space)
+            if arrest_result == True:
+                return True
+            else:
+                return
         elif turn_choice == 'End Turn':
-            # print("End Turn")
-            end_turn == True
-            break
+            return
         else:
             print("Invalid move choice, please try again.")
     return
 
 
 def thief_move(new_thief):
-    # print()
-    # print("Thief exact location: " + str(new_thief.get_exact_location()))
-    # print("Thief previous location: " + str(new_thief.get_previous_location()))
     valid_moves_list = new_thief.get_valid_moves()
-    # print("Valid moves: " + str(valid_moves_list))
     if new_thief.get_previous_location() in valid_moves_list:
         valid_moves_list.remove(new_thief.get_previous_location())
-        # print("Amended valid moves: " + str(valid_moves_list))
     new_location = random.choice(valid_moves_list)
-    # print("New location: " + str(new_location))
     new_thief.add_move_to_list(new_location)
-    # print("Thief exact location: " + new_thief.get_exact_location())
-    # print("Thief general location: " + new_thief.get_general_location())
-    print("Thief location: type: " + new_thief.get_location_type())
     return
 
 
-def attempt_arrest():
-    ...
-#     if location invalid
-#         print(f"Detective {detective.name}, you are docked $1000 for making a False Arrest! Check your notes and be more careful next time.")
-#         play false_arrest_sound
-#         return False
-#     rand(arrest/flee)
-#     if arrest
-#         print(f"You're gonna pay {thief.name}")
-#         return True
-#     else
-#         print("You won't catch me copper!")
-#         moves = 
-#         for (var moves = rand(4 to 6); moves > 0; moves--) {
-#             thief_move();
-#         }
-#         return False
+def attempt_arrest(new_thief, arrest_space):
+    # print(arrest_space)
+    # print(new_thief.get_exact_location())
+    if int(new_thief.get_exact_location()) == int(arrest_space):
+        if random.randint(1, 100) < 5: # !!! need to figure out a good %
+            print("The Thief escaped your arrest attempt! They're getting away...")
+            extra_moves = random.randint(5, 6)
+            for i in range(extra_moves):
+                thief_move(new_thief)
+            return False
+        else:
+            return True
+    else:
+        print("False Arrest (Wrong Space)")
+        return False
 
 
 if __name__ == "__main__":
