@@ -5,7 +5,7 @@ import sys
 
 def standard_input():
     yield "y"
-    yield 3
+    yield "3"
     yield 1
     yield 1
     yield 3
@@ -30,6 +30,12 @@ def standard_input():
     yield 1
     yield 1
     yield 1
+
+
+# Basic game settins
+game_settings = {
+        "Number Players": 0,
+    }
 
 
 # Player turn options
@@ -1004,8 +1010,8 @@ class Thief:
         self._starting_reward = thief_list.get(self._name)
         self._additional_crimes = 0
         self._succesful_escapes = 0
-        # self._starting_space = random.choice(list(thief_starting_crime_spaces))
-        self._starting_space = "123" # !!! ONLY during testing, remove and use the random function just above for live
+        self._starting_space = random.choice(list(thief_starting_crime_spaces))
+        # self._starting_space = "123" # !!! ONLY during testing, remove and use the random function just above for live
         self._move_history = [self._starting_space]
         self._move_dictionary = valid_moves_dict.copy()
     # Return the thief name
@@ -1063,16 +1069,17 @@ class Thief:
 
 def main():
     while True:
+        # Ask if they want to play, game will return here after someone wins
         choice = input("Do you want to start a new game? (y/n)").lower()
         if choice == 'y':
-            number_players = input("How many players? (1, 2, 3, 4)")
-            # Begin a new game
-            print("Beginning a new game with " + str(number_players) + " players.")
-            winner, thief = play_game(number_players)
+            new_game_setup()
+            print("Beginning a new game with " + str(game_settings["Number Players"]) + " players.")
+            winner, thief = play_game(game_settings)
             print("Congratulations to Player " + str(winner) + " on catching " + str(thief) + " with an original reward of $" + str(thief.get_starting_reward()) + ".")
             print("They committed " + str(thief.get_additional_crime_count() + 1) + " total crimes and escaped arrest " + str(thief.get_escape_count()) + " total times.")
             print("Their final arrest reward is $" + str(thief.get_total_reward()))
             print()
+            play_game()
         elif choice == 'n':
             # Quit game
             print("Quitting game...")
@@ -1081,12 +1088,23 @@ def main():
             print("Invalid input. Please enter 'y' or 'n'.")
 
 
-def play_game(number_players):
+def new_game_setup():
+    while True:
+        # Ask user to input player number
+        number_players = input("How many players? (1, 2, 3, 4)")
+        if number_players in ["1", "2", "3", "4"]:
+            game_settings["Number Players"] = int(number_players)
+            return
+        else:
+            print("Invalid input. Please enter '1, 2, 3, or 4'.")
+
+
+def play_game(game_settings):
     # Create a new thief from the wanted list and set the starting crime space
     new_thief = Thief()
     print("A new thief named " + str(new_thief) + " has been detected committing a crime somehwere in " + new_thief.get_general_location() + ".")
     print("Their current arrest reward is: $" + str(new_thief.get_starting_reward()))
-    # Set the player number to start with player 1
+    # Set the current player number to start with player 1
     player_number = 1
     # Players take turns until the thief is arrested
     while True:
@@ -1097,7 +1115,7 @@ def play_game(number_players):
         # next player
         player_number += 1
         # Reset to player 1 after last player turn
-        if player_number > int(number_players):
+        if player_number > game_settings["Number Players"]:
             player_number = 1
     return
 
@@ -1111,17 +1129,17 @@ def player_turn(new_thief, player_number):
         # Create a numbered list of player turn options
         turn_options = "\n".join([f"{i+1}. {move}" for i, move in enumerate(player_turn_options)])
         # Ask player pick an option
-        turn_choice_number = int(input(f"Pick an option by entering the corresponding number:\n{turn_options}\n")) - 1
-        turn_choice = player_turn_options[turn_choice_number]
-        if turn_choice == 'Clue':
+        turn_option_number = int(input(f"Pick an option by entering the corresponding number:\n{turn_options}\n")) - 1
+        player_turn_choice = player_turn_options[turn_option_number]
+        if player_turn_choice == 'Clue':
             # Random chance thief does nothing
             if random.randint(1, 100) < 5: # !!! need to figure out a good %
                 print("The Thief remains at their current location this turn")
             else:
                 thief_move(new_thief)
-        elif turn_choice == 'Tip':
+        elif player_turn_choice == 'Tip':
             print(get_exact_location())
-        elif turn_choice == 'Attempt Arrest':
+        elif player_turn_choice == 'Attempt Arrest':
             # Ask player to input the space number
             print("On what space number are you attempting to arrest the Thief? (no names, spaces, or dashes)")
             print("Example 1: For Building 1 Space 23 you would enter: 123")
@@ -1132,7 +1150,7 @@ def player_turn(new_thief, player_number):
                 return True
             else:
                 return
-        elif turn_choice == 'End Turn':
+        elif player_turn_choice == 'End Turn':
             return
         else:
             print("Invalid move choice, please try again.")
