@@ -1,7 +1,6 @@
 import random
-import csv
 import sys
-
+import os
 
 def standard_input():
     yield "y"
@@ -1079,7 +1078,6 @@ def main():
             print("They committed " + str(thief.get_additional_crime_count() + 1) + " total crimes and escaped arrest " + str(thief.get_escape_count()) + " total times.")
             print("Their final arrest reward is $" + str(thief.get_total_reward()))
             print()
-            play_game()
         elif choice == 'n':
             # Quit game
             print("Quitting game...")
@@ -1102,6 +1100,7 @@ def new_game_setup():
 def play_game(game_settings):
     # Create a new thief from the wanted list and set the starting crime space
     new_thief = Thief()
+    # Announce the general starting location for the thief and starting reward
     print("A new thief named " + str(new_thief) + " has been detected committing a crime somehwere in " + new_thief.get_general_location() + ".")
     print("Their current arrest reward is: $" + str(new_thief.get_starting_reward()))
     # Set the current player number to start with player 1
@@ -1125,7 +1124,7 @@ def player_turn(new_thief, player_number):
         print()
         print("Player " + str(player_number) + ", it is your turn. What would you like to do?")
         print("Current thief move history : " + str(new_thief.get_move_history()))
-        print("Thief exact location: " + str(new_thief.get_exact_location())) # !!! for debugging, remove before live
+        # print("!REMOVE BEFORE FINAL! Thief exact location: " + str(new_thief.get_exact_location())) # !!! for debugging, remove before live
         # Create a numbered list of player turn options
         turn_options = "\n".join([f"{i+1}. {move}" for i, move in enumerate(player_turn_options)])
         # Ask player pick an option
@@ -1138,14 +1137,20 @@ def player_turn(new_thief, player_number):
             else:
                 thief_move(new_thief)
         elif player_turn_choice == 'Tip':
-            print(get_exact_location())
+            clear_screen()
+            print()
+            print("Warning, the TIP you are about to receive is for player " + str(player_number) + "'s eyes ONLY!")
+            input("Press the ENTER key to continue...")
+            print()
+            print()
+            print("TIP RECEIVED! Thief exact location: " + str(new_thief.get_exact_location()))
+            print()
+            print()
+            print("Warning, after you press ENTER again, the screen/history will clear!")
+            input("Press the ENTER key to continue...")
+            clear_screen()
         elif player_turn_choice == 'Attempt Arrest':
-            # Ask player to input the space number
-            print("On what space number are you attempting to arrest the Thief? (no names, spaces, or dashes)")
-            print("Example 1: For Building 1 Space 23 you would enter: 123")
-            print("Example 2: For Street 6-70 you would enter: 670")
-            arrest_space = input("Space Number?")
-            arrest_result = attempt_arrest(new_thief, arrest_space)
+            arrest_result = attempt_arrest(new_thief)
             if arrest_result == True:
                 return True
             else:
@@ -1158,17 +1163,23 @@ def player_turn(new_thief, player_number):
 
 
 def thief_move(new_thief):
+    # Get the thieves current space valid moves list so we can temporarily modify it if needed
     valid_moves_list = new_thief.get_valid_moves()
+    # Remove previous location if its in the valid moves list because the 'thief does not backtrack'
     if new_thief.get_previous_location() in valid_moves_list:
         valid_moves_list.remove(new_thief.get_previous_location())
+    # Randomly pick a new space to move to and move
     new_location = random.choice(valid_moves_list)
     new_thief.add_move_to_list(new_location)
     return
 
 
-def attempt_arrest(new_thief, arrest_space):
-    # print(arrest_space)
-    # print(new_thief.get_exact_location())
+def attempt_arrest(new_thief):
+    # Ask player to input the space number
+    print("On what space number are you attempting to arrest the Thief? (no names, spaces, or dashes)")
+    print("Example 1: For Building 1 Space 23 you would enter: 123")
+    print("Example 2: For Street 6-70 you would enter: 670")
+    arrest_space = input("Space Number?")
     if int(new_thief.get_exact_location()) == int(arrest_space):
         if random.randint(1, 100) < 5: # !!! need to figure out a good %
             print("The Thief escaped your arrest attempt! They're getting away...")
@@ -1182,6 +1193,9 @@ def attempt_arrest(new_thief, arrest_space):
         print("False Arrest (Wrong Space)")
         return False
 
+# small clear screen funtion to clear/hide the print after revealing a tip
+def clear_screen():
+    os.system('cls' if os.name=='nt' else 'clear')
 
 if __name__ == "__main__":
     main()
