@@ -31,7 +31,7 @@ def standard_input():
     yield 1
 
 
-# Basic game settins
+# Basic game settings
 game_settings = {
         "Number Players": 0,
     }
@@ -1005,6 +1005,7 @@ thief_starting_crime_spaces = ["123", "144", "146", "164", "242", "245", "247", 
 class Thief:
     # Initialize thief class
     def __init__(self):
+        self._move_dictionary = valid_moves_dict.copy()
         self._name = random.choice(list(thief_list.keys()))
         self._starting_reward = thief_list.get(self._name)
         self._additional_crimes = 0
@@ -1012,7 +1013,8 @@ class Thief:
         self._starting_space = random.choice(list(thief_starting_crime_spaces))
         # self._starting_space = "123" # !!! ONLY during testing, remove and use the random function just above for live
         self._move_history = [self._starting_space]
-        self._move_dictionary = valid_moves_dict.copy()
+        self._current_general_location = self._move_dictionary[self._move_history[-1]]["General Location"]
+        self._current_space = self._starting_space
     # Return the thief name
     def __str__(self):
         return self._name
@@ -1031,29 +1033,40 @@ class Thief:
     # Return escape count
     def get_escape_count(self):
         return self._succesful_escapes
-    # Add move to list
+    # Add new thief move to history
     def add_move_to_list(self, space_number):
         self._move_history.append(space_number)
-        print("The Thief has moved to a " + self.get_location_type() + ' space.')
+        print("The Thief has moved to a " + self.get_space_type() + ' space.')
+        # Convert committed crime spaces to floor spaces
         if self._move_dictionary[space_number]['Space Type'] == 'Crime':
-            self._move_dictionary[space_number]['Space Type'] = 'Floor'
+            self._move_dictionary[space_number]['Space Type'] = 'Crime_Committed'
             self._additional_crimes += 1
+        # Check if thief changed 'general' location
+        if self._current_general_location != self._move_dictionary[self._move_history[-1]]["General Location"]:
+            # reset any previously committed crime spaces if true
+            for space_number in self._move_history:
+                if self._move_dictionary[space_number]['Space Type'] == 'Crime_Committed':
+                    self._move_dictionary[space_number]['Space Type'] = 'Crime'
+            self._current_general_location = self._move_dictionary[self._move_history[-1]]["General Location"]
     # Return general location (Building/Street Number)
     def get_general_location(self):
-        return self._move_dictionary[self._move_history[-1]]["General Location"]
-    # Return current location type
-    def get_location_type(self):
-        return self._move_dictionary[self._move_history[-1]]['Space Type']
-    # Return exact location
+        return self._current_general_location
+    # Return thief current space type
+    def get_space_type(self):
+        if self._move_dictionary[self._move_history[-1]]['Space Type'] == 'Crime_Committed':
+            return 'Floor'
+        else:
+            return self._move_dictionary[self._move_history[-1]]['Space Type']
+    # Return thief exact location
     def get_exact_location(self):
         return self._move_history[-1]
-    # Return previous space
+    # Return thief previous space
     def get_previous_location(self):
         if len(self._move_history) == 1:
             return self._move_history
         else:
             return self._move_history[-2]
-    # Return move history
+    # Return thief move history
     def get_move_history(self):
         move_history_types_raw = []
         for space_number in self._move_history:
@@ -1061,7 +1074,7 @@ class Thief:
             move_history_types_raw.append(space_type)
             move_history_types_edited = ' -> '.join(move_history_types_raw)
         return move_history_types_edited
-    # Return valid moves
+    # Return valid thief moves
     def get_valid_moves(self):
         return self._move_dictionary[self._move_history[-1]]['Valid Moves']
 
@@ -1168,11 +1181,20 @@ def thief_move(new_thief):
     # Remove previous location if its in the valid moves list because the 'thief does not backtrack'
     if new_thief.get_previous_location() in valid_moves_list:
         valid_moves_list.remove(new_thief.get_previous_location())
+    # If there is an available nearby crime space to move to, that must be the choice
+    for space_number in valid_moves_list:
+        if new_thief.get_space_type() == 'Crime':
+            new_location = space_number
+            new_thief.add_move_to_list(new_location)
+            return
     # Randomly pick a new space to move to and move
     new_location = random.choice(valid_moves_list)
     new_thief.add_move_to_list(new_location)
     return
 
+
+def thief_subway_use()
+...
 
 def attempt_arrest(new_thief):
     # Ask player to input the space number
@@ -1192,6 +1214,7 @@ def attempt_arrest(new_thief):
     else:
         print("False Arrest (Wrong Space)")
         return False
+
 
 # small clear screen funtion to clear/hide the print after revealing a tip
 def clear_screen():
