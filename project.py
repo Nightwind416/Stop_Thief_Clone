@@ -2,6 +2,7 @@ import random
 import sys
 import os
 
+
 def standard_input():
     yield "y"
     yield "3"
@@ -43,19 +44,6 @@ player_turn_options = [
     "Tip",
     "Attempt Arrest",
     "End Turn"
-    ]
-
-
-# List of detective IDs
-detective_ids = [
-    "Mavis Marvel",
-    "Kent Ketchum",
-    "Harley Hand",
-    "Carrie Badger",
-    "Rosa Subrosa",
-    "Sheerluck Holmes",
-    "Lester Lose O'",
-    "Nanny Harrow",
     ]
 
 
@@ -997,6 +985,9 @@ valid_moves_dict = {
     },
 }
 
+# List op all Subway spaces (where Thief can 'teleport' around board)
+subway_spaces = ["500", "599", "699", "799", "899"]
+
 # List of all starting crime spaces (where a thief can begin)
 thief_starting_crime_spaces = ["123", "144", "146", "164", "242", "245", "247", "265", "267", "337", "352", "355", "376", "425", "445", "467", "463"]
 
@@ -1137,31 +1128,41 @@ def player_turn(new_thief, player_number):
         print()
         print("Player " + str(player_number) + ", it is your turn. What would you like to do?")
         print("Current thief move history : " + str(new_thief.get_move_history()))
-        # print("!REMOVE BEFORE FINAL! Thief exact location: " + str(new_thief.get_exact_location())) # !!! for debugging, remove before live
         # Create a numbered list of player turn options
         turn_options = "\n".join([f"{i+1}. {move}" for i, move in enumerate(player_turn_options)])
         # Ask player pick an option
-        turn_option_number = int(input(f"Pick an option by entering the corresponding number:\n{turn_options}\n")) - 1
+        try:
+            turn_option_number = int(input(f"Pick an option by entering the corresponding number:\n{turn_options}\n")) - 1
+        except:
+            print("Invalid input. Please enter a valid integer.")
         player_turn_choice = player_turn_options[turn_option_number]
+        # Player chooses to get a clue
         if player_turn_choice == 'Clue':
-            # Random chance thief does nothing
+            # Random chance thief does not move
             if random.randint(1, 100) < 5: # !!! need to figure out a good %
                 print("The Thief remains at their current location this turn")
             else:
                 thief_move(new_thief)
+        # Player chooses to get a tip
         elif player_turn_choice == 'Tip':
             clear_screen()
             print()
             print("Warning, the TIP you are about to receive is for player " + str(player_number) + "'s eyes ONLY!")
-            input("Press the ENTER key to continue...")
-            print()
-            print()
-            print("TIP RECEIVED! Thief exact location: " + str(new_thief.get_exact_location()))
-            print()
-            print()
-            print("Warning, after you press ENTER again, the screen/history will clear!")
-            input("Press the ENTER key to continue...")
-            clear_screen()
+            show_tip = input("Type OK and press the ENTER key to continue or type CANCEL and press the ENTER key to cancel the TIP display\n")
+            print(show_tip)
+            if show_tip.lower() == 'ok':
+                print()
+                print()
+                print("TIP RECEIVED! Thief exact location: " + str(new_thief.get_exact_location()))
+                print()
+                print()
+                print("Warning, after you press ENTER again, the screen/history will clear!")
+                input("Press the ENTER key to continue...")
+                clear_screen()
+            elif show_tip.lower() == 'cancel':
+                print("Cancelling TIP display and returning to choice menu...")
+            else:
+                print("Your input was not recognized, cancelling TIP display and returning to choice menu...")
         elif player_turn_choice == 'Attempt Arrest':
             arrest_result = attempt_arrest(new_thief)
             if arrest_result == True:
@@ -1176,6 +1177,11 @@ def player_turn(new_thief, player_number):
 
 
 def thief_move(new_thief):
+    # Check if thief last turn ended on Subway space to trigger special move rule
+    if new_thief.get_space_type() == 'Subway':
+        new_location = random.choice(subway_spaces)
+        new_thief.add_move_to_list(new_location)
+        return
     # Get the thieves current space valid moves list so we can temporarily modify it if needed
     valid_moves_list = new_thief.get_valid_moves()
     # Remove previous location if its in the valid moves list because the 'thief does not backtrack'
@@ -1192,9 +1198,6 @@ def thief_move(new_thief):
     new_thief.add_move_to_list(new_location)
     return
 
-
-def thief_subway_use()
-...
 
 def attempt_arrest(new_thief):
     # Ask player to input the space number
@@ -1219,6 +1222,7 @@ def attempt_arrest(new_thief):
 # small clear screen funtion to clear/hide the print after revealing a tip
 def clear_screen():
     os.system('cls' if os.name=='nt' else 'clear')
+
 
 if __name__ == "__main__":
     main()
