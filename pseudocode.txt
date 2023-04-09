@@ -59,11 +59,12 @@ Thief movement
             Will not immediately 'backtrack' or return to the previous numbered space on the very next turn
                 Could backtrack within 3 steps (triangle move pattern)
     Other Rules
-        After breaking a window or opening a door, the next movment MUST be 'through' the space, not back to the previous (similar to backtracking exception)
-        Thief will not go through/over walls
+        Thief will not go through/over walls (depicted on the game board)
+        Once a crime location has been 'triggered' it becomes a 'floor' space until the thief leaves the building
+            All building crime locations that may have been triggerd are reset once the Thief leaves
+        The newsstandcan only be robbed once/thief, it will close and become a 'street' space until the thief is arrested and a new thief is on the loose
         When inside a building, if the thief comes within 1 space of a crime location, he will always commit the crime on the next move
-            Note1: once a crime location has been 'triggered' it becomes a 'floor' space until the thief leaves the building (all building crime locations that may have been triggerd are reset)
-            Note2: once the newsstand is robbed, it will close and become a 'street' space until the thief is arrested and a new thief is on the loose
+            Reminder, this may not apply if the Crime space was already triggerd and not yet reset, registering as a floor space
     Subway use
         If the thief ends their turn at the space in front of a corner or the center subway, they always take it on their next turn
             After riding, they will exit onto the street directly in front of the subway
@@ -77,6 +78,9 @@ Basic Game Loop
     Begin Game
         Round
             New Thief
-            Take Turns
+            Players Take Turns
+                Clue
+                Tip
                 Arrest
                     Win Game/New Round
+                    Escape/Continue

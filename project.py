@@ -1,3 +1,4 @@
+from playsound import playsound
 import random
 import sys
 import os
@@ -36,6 +37,8 @@ def standard_input():
 game_settings = {
         "Number Players": 0,
     }
+
+audio_files = ["path/to/audio/file1.mp3", "path/to/audio/file2.mp3", "path/to/audio/file3.mp3"]
 
 
 # Player turn options
@@ -1124,18 +1127,19 @@ def play_game(game_settings):
 
 
 def player_turn(new_thief, player_number):
+    this_turn_options = player_turn_options.copy()
     while True:
         print()
         print("Player " + str(player_number) + ", it is your turn. What would you like to do?")
         print("Current thief move history : " + str(new_thief.get_move_history()))
         # Create a numbered list of player turn options
-        turn_options = "\n".join([f"{i+1}. {move}" for i, move in enumerate(player_turn_options)])
+        turn_options = "\n".join([f"{i+1}. {move}" for i, move in enumerate(this_turn_options)])
         # Ask player pick an option
         try:
             turn_option_number = int(input(f"Pick an option by entering the corresponding number:\n{turn_options}\n")) - 1
         except:
             print("Invalid input. Please enter a valid integer.")
-        player_turn_choice = player_turn_options[turn_option_number]
+        player_turn_choice = this_turn_options[turn_option_number]
         # Player chooses to get a clue
         if player_turn_choice == 'Clue':
             # Random chance thief does not move
@@ -1143,6 +1147,7 @@ def player_turn(new_thief, player_number):
                 print("The Thief remains at their current location this turn")
             else:
                 thief_move(new_thief)
+            this_turn_options[]
         # Player chooses to get a tip
         elif player_turn_choice == 'Tip':
             clear_screen()
