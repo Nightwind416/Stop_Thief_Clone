@@ -39,16 +39,16 @@ game_settings = {
     }
 
 audio_files = {
-    "Alarm": "audio_files/Alarm.wav",
-    "Arrest": "audio_files/Arrest.mp3",
-    "Footsteps": "audio_files/Footsteps.mp3",
-    "Door": "audio_files/Door.mp3",
-    "Window": "audio_files/Window.mp3",
-    "Incorrect_Location": "audio_files/Incorrect_Location.mp3",
-    "No_Movement": "audio_files/No_Movement.mp3",
-    "Street": "audio_files/Street.mp3",
-    "Subway": "audio_files/Subway.mp3",
-    "Tip": "audio_files/Tip.mp3"
+    "Alarm": "audio_files\Alarm.wav",
+    "Arrest": "audio_files\Arrest.mp3",
+    "Footsteps": "audio_files\Footsteps.mp3",
+    "Door": "audio_files\Door.mp3",
+    "Window": "audio_files\Window.mp3",
+    "Incorrect_Location": "audio_files\Incorrect_Location.mp3",
+    "No_Movement": "audio_files\\No_Movement.mp3",
+    "Street": "audio_files\Street.mp3",
+    "Subway": "audio_files\Subway.mp3",
+    "Tip": "audio_files\Tip.mp3"
 }
 
 
