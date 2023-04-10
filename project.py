@@ -38,7 +38,18 @@ game_settings = {
         "Number Players": 0,
     }
 
-audio_files = ["path/to/audio/file1.mp3", "path/to/audio/file2.mp3", "path/to/audio/file3.mp3"]
+audio_files = {
+    "Alarm": "audio_files/Alarm.wav",
+    "Arrest": "audio_files/Arrest.mp3",
+    "Footsteps": "audio_files/Footsteps.mp3",
+    "Door": "audio_files/Door.mp3",
+    "Window": "audio_files/Window.mp3",
+    "Incorrect_Location": "audio_files/Incorrect_Location.mp3",
+    "No_Movement": "audio_files/No_Movement.mp3",
+    "Street": "audio_files/Street.mp3",
+    "Subway": "audio_files/Subway.mp3",
+    "Tip": "audio_files/Tip.mp3"
+}
 
 
 # Player turn options
@@ -1108,6 +1119,7 @@ def play_game(game_settings):
     # Create a new thief from the wanted list and set the starting crime space
     new_thief = Thief()
     # Announce the general starting location for the thief and starting reward
+    playsound(audio_files["Alarm"])
     print("A new thief named " + str(new_thief) + " has been detected committing a crime somehwere in " + new_thief.get_general_location() + ".")
     print("Their current arrest reward is: $" + str(new_thief.get_starting_reward()))
     # Set the current player number to start with player 1
@@ -1142,40 +1154,26 @@ def player_turn(new_thief, player_number):
         player_turn_choice = this_turn_options[turn_option_number]
         # Player chooses to get a clue
         if player_turn_choice == 'Clue':
-            # Random chance thief does not move
-            if random.randint(1, 100) < 5: # !!! need to figure out a good %
-                print("The Thief remains at their current location this turn")
-            else:
-                thief_move(new_thief)
-            this_turn_options[]
+            thief_move(new_thief)
+            # Update clue text, only get 1 'free' clue each turn per player
+            this_turn_options[turn_option_number] = 'You used your free clue this turn, only select if you are allowed another clue on your same turn.'
+         # Same player chooses to get a second (or more) clue on the same turn
+        if player_turn_choice == 'You used your free clue this turn, only select if you are allowed another clue on your same turn.':
+            thief_move(new_thief)
         # Player chooses to get a tip
         elif player_turn_choice == 'Tip':
-            clear_screen()
-            print()
-            print("Warning, the TIP you are about to receive is for player " + str(player_number) + "'s eyes ONLY!")
-            show_tip = input("Type OK and press the ENTER key to continue or type CANCEL and press the ENTER key to cancel the TIP display\n")
-            print(show_tip)
-            if show_tip.lower() == 'ok':
-                print()
-                print()
-                print("TIP RECEIVED! Thief exact location: " + str(new_thief.get_exact_location()))
-                print()
-                print()
-                print("Warning, after you press ENTER again, the screen/history will clear!")
-                input("Press the ENTER key to continue...")
-                clear_screen()
-            elif show_tip.lower() == 'cancel':
-                print("Cancelling TIP display and returning to choice menu...")
-            else:
-                print("Your input was not recognized, cancelling TIP display and returning to choice menu...")
+            get_tip(new_thief, player_number)
+        # Player chooses to attempt an arrest
         elif player_turn_choice == 'Attempt Arrest':
             arrest_result = attempt_arrest(new_thief)
             if arrest_result == True:
                 return True
             else:
                 return
+        # Player chooses to end their turn
         elif player_turn_choice == 'End Turn':
             return
+        # Player messed up turn choice
         else:
             print("Invalid move choice, please try again.")
     return
@@ -1185,7 +1183,10 @@ def thief_move(new_thief):
     # Check if thief last turn ended on Subway space to trigger special move rule
     if new_thief.get_space_type() == 'Subway':
         new_location = random.choice(subway_spaces)
-        new_thief.add_move_to_list(new_location)
+    # Random chance thief does not move
+    if random.randint(1, 100) < 5: # !!! need to figure out a good %
+        print("The Thief remains at their current location this turn")
+        playsound(audio_files["No_Movement"])
         return
     # Get the thieves current space valid moves list so we can temporarily modify it if needed
     valid_moves_list = new_thief.get_valid_moves()
@@ -1196,12 +1197,46 @@ def thief_move(new_thief):
     for space_number in valid_moves_list:
         if new_thief.get_space_type() == 'Crime':
             new_location = space_number
-            new_thief.add_move_to_list(new_location)
-            return
     # Randomly pick a new space to move to and move
-    new_location = random.choice(valid_moves_list)
+        else:
+            new_location = random.choice(valid_moves_list)
     new_thief.add_move_to_list(new_location)
+    # Get space type and play appropiate sound effect
+    if new_thief.get_space_type() == "Crime":
+        playsound(audio_files["Alarm"])
+    elif new_thief.get_space_type() == "Floor":
+        playsound(audio_files["Footsteps"])
+    elif new_thief.get_space_type() == "Door":
+        playsound(audio_files["Door"])
+    elif new_thief.get_space_type() == "Window":
+        playsound(audio_files["Window"])
+    elif new_thief.get_space_type() == "Street":
+        playsound(audio_files["Street"])
+    elif new_thief.get_space_type() == "Subway":
+        playsound(audio_files["Subway"])
     return
+
+
+def get_tip(new_thief, player_number):
+    clear_screen()
+    print()
+    print("Warning, the TIP you are about to receive is for player " + str(player_number) + "'s eyes ONLY!")
+    show_tip = input("Type OK and press the ENTER key to continue or type CANCEL and press the ENTER key to cancel the TIP display\n")
+    print(show_tip)
+    if show_tip.lower() == 'ok':
+        playsound(audio_files["Tip"])
+        print()
+        print()
+        print("TIP RECEIVED! Thief exact location: " + str(new_thief.get_exact_location()))
+        print()
+        print()
+        print("Warning, after you press ENTER again, the screen/history will clear!")
+        input("Press the ENTER key to continue...")
+        clear_screen()
+    elif show_tip.lower() == 'cancel':
+        print("Cancelling TIP display and returning to choice menu...")
+    else:
+        print("Your input was not recognized, cancelling TIP display and returning to choice menu...")
 
 
 def attempt_arrest(new_thief):
@@ -1210,6 +1245,7 @@ def attempt_arrest(new_thief):
     print("Example 1: For Building 1 Space 23 you would enter: 123")
     print("Example 2: For Street 6-70 you would enter: 670")
     arrest_space = input("Space Number?")
+    playsound(audio_files["Arrest"])
     if int(new_thief.get_exact_location()) == int(arrest_space):
         if random.randint(1, 100) < 5: # !!! need to figure out a good %
             print("The Thief escaped your arrest attempt! They're getting away...")
