@@ -1,42 +1,71 @@
+import os
 from playsound import playsound
+import PySimpleGUI as sg
 import random
 import sys
-import os
 
 
-def standard_input():
-    yield "y"
-    yield "3"
-    yield 1
-    yield 1
-    yield 3
-    yield 124
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
-    yield 1
+# Define custom PySimpleGUI themes to use
+# Need to call     sg.theme_add_new('theme_custom_name', theme_custom_name)       before they can be used
+gui_themes = {
+    "main_menu_gui_theme": {
+        'BACKGROUND': '#F7F7F7',
+        'TEXT': '#000000',
+        'INPUT': '#FFFFFF',
+        'TEXT_INPUT': '#000000',
+        'SCROLL': '#C7E78B',
+        'BUTTON': ('white', '#007979'),
+        'PROGRESS': ('#01826B', '#D0D0D0'),
+        'BORDER': 1, 'SLIDER_DEPTH': 0,
+        'PROGRESS_DEPTH': 0
+    },
+    "player_turn_gui_theme": {
+        'BACKGROUND': '#000000',
+        'TEXT': '#FFFFFF', 'INPUT':
+        '#CCCCCC', 'TEXT_INPUT':
+        '#FFFFFF', 'SCROLL': '#C7E78B',
+        'BUTTON': ('white', '#007979'),
+        'PROGRESS': ('#01826B', '#D0D0D0'),
+        'BORDER': 1, 'SLIDER_DEPTH': 0,
+        'PROGRESS_DEPTH': 0
+    }
+}
+
+# Define different PySimpleGUI layouts to use
+gui_layouts = {
+    "game_menu": [
+        [sg.Text("Do you want to start a new game? (y/n)")],
+        [sg.InputText(key="input")],
+        [sg.Button("Start"), sg.Button("Quit")]
+    ],
+    "game_results": [
+        [sg.Text("Congratulations to Player {winner} on catching {thief} with an original reward of ${thief.get_starting_reward)}.")],
+        [sg.Text("They committed {thief.get_additional_crime_count} total crimes and escaped arrest {thief.get_escape_count} total times.")],
+        [sg.Text("Their final arrest reward is ${thief.get_total_reward}")],
+        [sg.Button("OK")]
+    ],
+    "player_turn": [
+        [("Do you want to start a new game? (y/n)")],
+        [sg.InputText(key="input")],
+        [sg.Button("Start"), sg.Button("Quit")]
+    ],
+    "tip": [
+        [sg.Text("Do you want to start a new game? (y/n)")],
+        [sg.InputText(key="input")],
+        [sg.Button("Start"), sg.Button("Quit")]
+    ],
+    "attempt_arrest": [
+        [sg.Text("Do you want to start a new game? (y/n)")],
+        [sg.InputText(key="input")],
+        [sg.Button("Start"), sg.Button("Quit")]
+    ]
+}
 
 
 # Basic game settings
 game_settings = {
-        "Number Players": 0,
-    }
+    "Number Players": 0,
+}
 
 audio_files = {
     "Alarm": "audio_files\Alarm.wav",
@@ -58,7 +87,7 @@ player_turn_options = [
     "Tip",
     "Attempt Arrest",
     "End Turn"
-    ]
+]
 
 
 # Dictionary of thief names and wanted values
@@ -73,7 +102,7 @@ thief_list = {
     "Ruby Diamond": 800,
     "Saul Teen": 1000,
     "The Brain": 1000,
-    }
+}
 
 
 # Create a dictionary of valid moves
@@ -1020,6 +1049,7 @@ class Thief:
         self._move_history = [self._starting_space]
         self._current_general_location = self._move_dictionary[self._move_history[-1]]["General Location"]
         self._current_space = self._starting_space
+        self.window = window
     # Return the thief name
     def __str__(self):
         return self._name
@@ -1085,7 +1115,16 @@ class Thief:
 
 
 def main():
+    # Register custom gui themes with PySimpleGUI using theme_add_new()
+    for theme_name, theme in gui_themes.items():
+        sg.theme_add_new(theme_name, theme)
+    # Create gui window
+    sg.theme = gui_themes["main_menu_gui_theme"]
+    gui_window = sg.Window("Main Menu", gui_layouts["game_menu"])
     while True:
+        event, values = gui_window.read()
+        if event == sg.WIN_CLOSED:
+            break
         # Ask if they want to play, game will return here after someone wins
         choice = input("Do you want to start a new game? (y/n)").lower()
         if choice == 'y':
@@ -1100,8 +1139,10 @@ def main():
             # Quit game
             print("Quitting game...")
             sys.exit()
+            window.close()
         else:
             print("Invalid input. Please enter 'y' or 'n'.")
+    window.close()
 
 
 def new_game_setup():
@@ -1263,6 +1304,10 @@ def attempt_arrest(new_thief):
 # small clear screen funtion to clear/hide the print after revealing a tip
 def clear_screen():
     os.system('cls' if os.name=='nt' else 'clear')
+
+
+def update_gui_message(window, message):
+    window['-MESSAGE-'].update(message)
 
 
 if __name__ == "__main__":
