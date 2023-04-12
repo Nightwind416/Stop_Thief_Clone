@@ -8,7 +8,7 @@ import sys
 # Define custom PySimpleGUI themes to use
 # Need to call     sg.theme_add_new('theme_custom_name', theme_custom_name)       before they can be used
 gui_themes = {
-    "main_menu_gui_theme": {
+    "main_menu": {
         'BACKGROUND': '#F7F7F7',
         'TEXT': '#000000',
         'INPUT': '#FFFFFF',
@@ -19,7 +19,7 @@ gui_themes = {
         'BORDER': 1, 'SLIDER_DEPTH': 0,
         'PROGRESS_DEPTH': 0
     },
-    "player_turn_gui_theme": {
+    "player_turn": {
         'BACKGROUND': '#000000',
         'TEXT': '#FFFFFF', 'INPUT':
         '#CCCCCC', 'TEXT_INPUT':
@@ -34,30 +34,23 @@ gui_themes = {
 # Define different PySimpleGUI layouts to use
 gui_layouts = {
     "game_menu": [
-        [sg.Text("Do you want to start a new game? (y/n)")],
-        [sg.InputText(key="input")],
-        [sg.Button("Start"), sg.Button("Quit")]
-    ],
-    "game_results": [
-        [sg.Text("Congratulations to Player {winner} on catching {thief} with an original reward of ${thief.get_starting_reward)}.")],
-        [sg.Text("They committed {thief.get_additional_crime_count} total crimes and escaped arrest {thief.get_escape_count} total times.")],
-        [sg.Text("Their final arrest reward is ${thief.get_total_reward}")],
-        [sg.Button("OK")]
+        [sg.Text("Welcome to the game!")],
+        [sg.Text("How many human players?")],
+        [sg.Radio("2", "num_players", default=True), sg.Radio("3", "num_players"), sg.Radio("4", "num_players")],
+        [sg.Button('Start Game'), sg.Button('Quit Game')]
     ],
     "player_turn": [
-        [("Do you want to start a new game? (y/n)")],
-        [sg.InputText(key="input")],
-        [sg.Button("Start"), sg.Button("Quit")]
+        [sg.Text("Current thief move history : !!!failed to update", key='thief history')],
+        [sg.Text("Player ???, it is your turn. What would you like to do?", key='player number')],
+        [sg.Text("You used your free clue this turn, only select if you are allowed another clue on your same turn.", visible=False, key='clue used')],
+        [sg.Radio("Clue", "choice", default=True), sg.Radio("Tip", "choice"), sg.Radio("Attempt Arrest", "choice"), sg.Radio("End Turn", "choice")],
+        [sg.Button('Submit'), sg.Button('End Turn')]
     ],
     "tip": [
-        [sg.Text("Do you want to start a new game? (y/n)")],
-        [sg.InputText(key="input")],
-        [sg.Button("Start"), sg.Button("Quit")]
+        [sg.Text("receive tip")]
     ],
     "attempt_arrest": [
-        [sg.Text("Do you want to start a new game? (y/n)")],
-        [sg.InputText(key="input")],
-        [sg.Button("Start"), sg.Button("Quit")]
+        [sg.Text("attempt arrest")]
     ]
 }
 
@@ -1049,7 +1042,6 @@ class Thief:
         self._move_history = [self._starting_space]
         self._current_general_location = self._move_dictionary[self._move_history[-1]]["General Location"]
         self._current_space = self._starting_space
-        self.window = window
     # Return the thief name
     def __str__(self):
         return self._name
@@ -1068,6 +1060,10 @@ class Thief:
     # Return escape count
     def get_escape_count(self):
         return self._succesful_escapes
+    # Return general starting location (Building Number)
+    def get_general_starting_location(self):
+        starting_building = self._move_dictionary[self._move_history[0]]["General Location"]
+        return starting_building
     # Add new thief move to history
     def add_move_to_list(self, space_number):
         self._move_history.append(space_number)
@@ -1108,7 +1104,8 @@ class Thief:
             space_type = self._move_dictionary[space_number]["Space Type"]
             move_history_types_raw.append(space_type)
             move_history_types_edited = ' -> '.join(move_history_types_raw)
-        return move_history_types_edited
+            move_history_types_combined = self.get_general_starting_location() + " " + move_history_types_edited
+        return move_history_types_combined
     # Return valid thief moves
     def get_valid_moves(self):
         return self._move_dictionary[self._move_history[-1]]['Valid Moves']
@@ -1118,31 +1115,34 @@ def main():
     # Register custom gui themes with PySimpleGUI using theme_add_new()
     for theme_name, theme in gui_themes.items():
         sg.theme_add_new(theme_name, theme)
-    # Create gui window
-    sg.theme = gui_themes["main_menu_gui_theme"]
+    # Create Main Menu gui window
+    sg.theme = gui_themes["main_menu"]
     gui_window = sg.Window("Main Menu", gui_layouts["game_menu"])
     while True:
-        event, values = gui_window.read()
-        if event == sg.WIN_CLOSED:
+        gui_event, gui_values = gui_window.read()
+        if gui_event == sg.WIN_CLOSED or gui_event == "Quit Game":
             break
-        # Ask if they want to play, game will return here after someone wins
-        choice = input("Do you want to start a new game? (y/n)").lower()
-        if choice == 'y':
-            new_game_setup()
-            print("Beginning a new game with " + str(game_settings["Number Players"]) + " players.")
+        if gui_event == 'Start Game':
+            gui_window.close()
             winner, thief = play_game(game_settings)
-            print("Congratulations to Player " + str(winner) + " on catching " + str(thief) + " with an original reward of $" + str(thief.get_starting_reward()) + ".")
-            print("They committed " + str(thief.get_additional_crime_count() + 1) + " total crimes and escaped arrest " + str(thief.get_escape_count()) + " total times.")
-            print("Their final arrest reward is $" + str(thief.get_total_reward()))
-            print()
-        elif choice == 'n':
-            # Quit game
-            print("Quitting game...")
-            sys.exit()
-            window.close()
-        else:
-            print("Invalid input. Please enter 'y' or 'n'.")
-    window.close()
+        # # Ask if they want to play, game will return here after someone wins
+        # choice = input("Do you want to start a new game? (y/n)").lower()
+        # if choice == 'y':
+        #     new_game_setup()
+        #     print("Beginning a new game with " + str(game_settings["Number Players"]) + " players.")
+        #     winner, thief = play_game(game_settings)
+        #     print("Congratulations to Player " + str(winner) + " on catching " + str(thief) + " with an original reward of $" + str(thief.get_starting_reward()) + ".")
+        #     print("They committed " + str(thief.get_additional_crime_count() + 1) + " total crimes and escaped arrest " + str(thief.get_escape_count()) + " total times.")
+        #     print("Their final arrest reward is $" + str(thief.get_total_reward()))
+        #     print()
+        # elif choice == 'n':
+        #     # Quit game
+        #     print("Quitting game...")
+        #     sys.exit()
+        #     window.close()
+        # else:
+        #     print("Invalid input. Please enter 'y' or 'n'.")
+    gui_window.close()
 
 
 def new_game_setup():
@@ -1161,7 +1161,7 @@ def play_game(game_settings):
     new_thief = Thief()
     # Announce the general starting location for the thief and starting reward
     playsound(audio_files["Alarm"])
-    print("A new thief named " + str(new_thief) + " has been detected committing a crime somehwere in " + new_thief.get_general_location() + ".")
+    print("A new thief named " + str(new_thief) + " has been detected committing a crime somehwere in " + new_thief.get_general_starting_location() + ".")
     print("Their current arrest reward is: $" + str(new_thief.get_starting_reward()))
     # Set the current player number to start with player 1
     player_number = 1
@@ -1180,43 +1180,74 @@ def play_game(game_settings):
 
 
 def player_turn(new_thief, player_number):
+    # Create Player Turn gui window
+    sg.theme = gui_themes["player_turn"]
+    gui_window = sg.Window("Player Turn", gui_layouts["player_turn"])
+    # Copy player turn options so we can make temp changes
     this_turn_options = player_turn_options.copy()
     while True:
-        print()
-        print("Player " + str(player_number) + ", it is your turn. What would you like to do?")
-        print("Current thief move history : " + str(new_thief.get_move_history()))
-        # Create a numbered list of player turn options
-        turn_options = "\n".join([f"{i+1}. {move}" for i, move in enumerate(this_turn_options)])
-        # Ask player pick an option
-        try:
-            turn_option_number = int(input(f"Pick an option by entering the corresponding number:\n{turn_options}\n")) - 1
-        except:
-            print("Invalid input. Please enter a valid integer.")
-        player_turn_choice = this_turn_options[turn_option_number]
+        thief_move_history = "Thief move history: " + str(new_thief.get_move_history())
+        gui_event, gui_values = gui_window.read()
+        gui_window['thief history'].update(thief_move_history)
+        gui_window.refresh()
+        print(thief_move_history)
+        if gui_event == sg.WIN_CLOSED or gui_event == "Quit Game":
+            break
         # Player chooses to get a clue
-        if player_turn_choice == 'Clue':
+        if gui_event == 'Clue':
             thief_move(new_thief)
-            # Update clue text, only get 1 'free' clue each turn per player
-            this_turn_options[turn_option_number] = 'You used your free clue this turn, only select if you are allowed another clue on your same turn.'
-         # Same player chooses to get a second (or more) clue on the same turn
-        if player_turn_choice == 'You used your free clue this turn, only select if you are allowed another clue on your same turn.':
-            thief_move(new_thief)
+            # Update clue note to be visible, only get 1 'free' clue each turn per player
+            gui_window['clue used'].update(visible=True)
         # Player chooses to get a tip
-        elif player_turn_choice == 'Tip':
+        if gui_event == 'Tip':
             get_tip(new_thief, player_number)
         # Player chooses to attempt an arrest
-        elif player_turn_choice == 'Attempt Arrest':
+        if gui_event == 'Attempt Arrest':
             arrest_result = attempt_arrest(new_thief)
             if arrest_result == True:
                 return True
             else:
                 return
         # Player chooses to end their turn
-        elif player_turn_choice == 'End Turn':
+        if gui_event == 'End Turn':
             return
-        # Player messed up turn choice
-        else:
-            print("Invalid move choice, please try again.")
+
+        # print()
+        # print("Player " + str(player_number) + ", it is your turn. What would you like to do?")
+        # print("Current thief move history : " + str(new_thief.get_move_history()))
+        # Create a numbered list of player turn options
+        # turn_options = "\n".join([f"{i+1}. {move}" for i, move in enumerate(this_turn_options)])
+        # Ask player pick an option
+        # try:
+        #     turn_option_number = int(input(f"Pick an option by entering the corresponding number:\n{turn_options}\n")) - 1
+        # except:
+        #     print("Invalid input. Please enter a valid integer.")
+        # player_turn_choice = this_turn_options[turn_option_number]
+        # # Player chooses to get a clue
+        # if player_turn_choice == 'Clue':
+        #     thief_move(new_thief)
+        #     # Update clue text, only get 1 'free' clue each turn per player
+        #     this_turn_options[turn_option_number] = 'You used your free clue this turn, only select if you are allowed another clue on your same turn.'
+        #  # Same player chooses to get a second (or more) clue on the same turn
+        # if player_turn_choice == 'You used your free clue this turn, only select if you are allowed another clue on your same turn.':
+        #     thief_move(new_thief)
+        # # Player chooses to get a tip
+        # elif player_turn_choice == 'Tip':
+        #     get_tip(new_thief, player_number)
+        # # Player chooses to attempt an arrest
+        # elif player_turn_choice == 'Attempt Arrest':
+        #     arrest_result = attempt_arrest(new_thief)
+        #     if arrest_result == True:
+        #         return True
+        #     else:
+        #         return
+        # # Player chooses to end their turn
+        # elif player_turn_choice == 'End Turn':
+        #     return
+        # # Player messed up turn choice
+        # else:
+        #     print("Invalid move choice, please try again.")
+    gui_window.close()
     return
 
 
