@@ -1,5 +1,5 @@
 # Stop_Thief_Clone
-    #### Video Demo:  <URL HERE>
+    #### Video Demo:  <Vimeo URL HERE>
     #### Description:
     TODO
     
