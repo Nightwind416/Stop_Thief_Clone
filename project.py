@@ -11,8 +11,9 @@ audio_files = {
     "Awaiting Input": "audio_files\Awaiting_Input.mp3",
     "Crime": "audio_files\Crime.mp3",
     "Door": "audio_files\Door.mp3",
+    "Escape": "audio_files\Escape.mp3",
     "Floor": "audio_files\Floor.mp3",
-    "Incorrect_Location": "audio_files\Incorrect_Location.mp3",
+    "Incorrect Location": "audio_files\Incorrect_Location.mp3",
     "No_Movement": "audio_files\\No_Movement.mp3",
     "Street": "audio_files\Street.mp3",
     "Subway": "audio_files\Subway.mp3",
@@ -1268,8 +1269,10 @@ def attempt_arrest(new_thief):
             audio_file.play()
             arrest_space = int(gui_values['arrest_space'])
             if int(new_thief.get_exact_location()) == int(arrest_space):
-                if random.randint(1, 100) < 5: # !!! need to figure out a good %
-                    print("The Thief escaped your arrest attempt! They're getting away...")
+                if random.randint(1, 100) < 95: # !!! need to figure out a good %
+                    audio_file = mixer.Sound(audio_files["Incorrect Location"])
+                    audio_file.play()
+                    sg.popup("The Thief escaped your arrest attempt! They're getting away...", title="Escape Arrest", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
                     extra_moves = random.randint(5, 6)
                     for i in range(extra_moves):
                         thief_move(new_thief)
@@ -1279,7 +1282,9 @@ def attempt_arrest(new_thief):
                     attempt_arrest_window.close()
                     return True
             else:
-                print("False Arrest (Wrong Space)")
+                audio_file = mixer.Sound(audio_files["Incorrect Location"])
+                audio_file.play()
+                sg.popup("Wrong location, False Arrest, lose a turn", title="False Arrest", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
                 attempt_arrest_window.close()
                 return False
 
