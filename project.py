@@ -5,22 +5,22 @@ import sys
 
 
 # Audio setup
-mixer.init()
-audio_files = {
-    "Attempt Arrest": "audio_files\Attempt_Arrest.mp3",
-    "Awaiting Input": "audio_files\Awaiting_Input.mp3",
-    "Crime": "audio_files\Crime.mp3",
-    "Door": "audio_files\Door.mp3",
-    "Escape": "audio_files\Escape.mp3",
-    "Floor": "audio_files\Floor.mp3",
-    "Incorrect Location": "audio_files\Incorrect_Location.mp3",
-    "No_Movement": "audio_files\\No_Movement.mp3",
-    "Street": "audio_files\Street.mp3",
-    "Subway": "audio_files\Subway.mp3",
-    "Tip": "audio_files\Tip.mp3",
-    "Tipline": "audio_files\Tipline.mp3",
-    "Window": "audio_files\Window.mp3"
-}
+# mixer.init()
+# audio_files = {
+#     "Attempt Arrest": "audio_files\Attempt_Arrest.mp3",
+#     "Awaiting Input": "audio_files\Awaiting_Input.mp3",
+#     "Crime": "audio_files\Crime.mp3",
+#     "Door": "audio_files\Door.mp3",
+#     "Escape": "audio_files\Escape.mp3",
+#     "Floor": "audio_files\Floor.mp3",
+#     "Incorrect Location": "audio_files\Incorrect_Location.mp3",
+#     "No_Movement": "audio_files\\No_Movement.mp3",
+#     "Street": "audio_files\Street.mp3",
+#     "Subway": "audio_files\Subway.mp3",
+#     "Tip": "audio_files\Tip.mp3",
+#     "Tipline": "audio_files\Tipline.mp3",
+#     "Window": "audio_files\Window.mp3"
+# }
 
 
 # Dictionary of thief names and wanted values
@@ -978,7 +978,7 @@ class Thief:
         self._additional_crimes = -1 # Initial crime will bring this up to 0
         self._succesful_escapes = 0
         self._move_history_space_numbers = []
-        self._move_history_space_types = ""
+        self._move_history_space_types = "null"
     # Return the thief name
     def __str__(self):
         return self._name
@@ -1025,23 +1025,25 @@ class Thief:
     # Return valid thief moves
     def get_valid_moves(self, space_number):
         return self._move_dictionary[space_number]['Valid Moves']
-    # Add new thief move to history
-    def add_move_to_list(self, space_number):
-        if len(self._move_history_space_types) == 0:
-            self._move_history_space_types == str(self._move_dictionary[space_number]["General Location"]) + " Crime"
+    # Add new general location to history
+    def add_location_to_history(self, location):
+            if location == 'Crime_Committed':
+                location = 'Floor'
+            new_location = ' -> ' + location
+            self._move_history_space_types = self._move_history_space_types + new_location
+    # Add new space number to history
+    def add_space_to_history(self, space_number):
+        if len(self._move_history_space_numbers) == 0:
+            self._move_history_space_types = self._move_dictionary[space_number]["General Location"] + " "
         self._move_history_space_numbers.append(space_number)
-        space_type = self._move_dictionary[space_number]["Space Type"]
-        if space_type == 'Crime_Committed':
-            space_type = 'Floor'
-        new_move = ' -> ' + str(space_type)
-        self._move_history_space_types = self._move_history_space_types + new_move
-        print(self._move_history_space_types)
+        location = self._move_dictionary[space_number]["Space Type"]
+        self.add_location_to_history(location)
         # Convert committed crime spaces to floor spaces
-        if self._move_dictionary[space_number]['Space Type'] == 'Crime':
+        if location == 'Crime':
             self._move_dictionary[space_number]['Space Type'] = 'Crime_Committed'
             self._additional_crimes += 1
-        # Check if thief changed 'general' location
-        if self.get_general_location(space_number) != self._move_dictionary[self._move_history_space_numbers[-1]]["General Location"]:
+        # Check if thief changed 'general' locations
+        if self.get_general_location(space_number) != self.get_general_location(self._move_history_space_numbers[-1]):
             # reset any previously committed crime spaces if true
             for space_number in self._move_history_space_numbers:
                 if self._move_dictionary[space_number]['Space Type'] == 'Crime_Committed':
@@ -1064,7 +1066,9 @@ def main():
         [sg.Text("")],
         [sg.Column([[sg.Text("How many human players?")]], justification='center')],
         [sg.Column([[sg.Radio("2", "num_players", key='2'), sg.Radio("3", "num_players", key='3'), sg.Radio("4", "num_players", key='4')]], justification='center')],
-        [sg.Column([[sg.Button('Play Game'), sg.Button('Quit Game')]], justification='center')]
+        [sg.Column([[sg.Button('Play Game'), sg.Button('Quit Game')]], justification='center')],
+        [sg.Text("")],
+        [sg.Column([[sg.Text("*all sounds are public domain")]], justification='right')]
     ]
     game_menu_window = sg.Window("Game Menu", game_menu_layout, enable_close_attempted_event=True).finalize()
     while True:
@@ -1096,9 +1100,9 @@ def play_game(number_players):
     starting_reward = thief_list[thief_name]
     starting_space = random.choice(list(thief_starting_crime_spaces))
     new_thief = Thief(thief_name, starting_reward)
-    new_thief.add_move_to_list(starting_space)
+    new_thief.add_space_to_history(starting_space)
     # Announce the general starting location for the thief and starting reward
-    audio_file = mixer.Sound(audio_files["Crime"])
+    # audio_file = mixer.Sound(audio_files["Crime"])
     # audio_file.play()
     line1 = ("A new thief named " + str(new_thief) + " has been detected committing a crime somehwere in " + new_thief.get_general_starting_location() + ".")
     line2 = ("Their current arrest reward is: $" + str(new_thief.get_starting_reward()))
@@ -1192,14 +1196,17 @@ def player_turn(new_thief, player_number):
 
 
 def thief_move(new_thief):
+    print("")
+    print("Thief move...")
     thief_current_location = new_thief.get_current_space_number()
+    thief_new_location = 0
     # Check if thief last turn ended on Subway space to trigger special move rule
     if new_thief.get_space_type(thief_current_location) == 'Subway':
-        new_location = random.choice(subway_spaces)
+        thief_new_location = random.choice(subway_spaces)
     # Random chance thief does not move
     if random.randint(1, 100) < 5: # !!! need to figure out a good %
         sg.popup("The Thief remains at their current location this turn", title="Did not move", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
-        audio_file = mixer.Sound(audio_files["No_Movement"])
+        # audio_file = mixer.Sound(audio_files["No_Movement"])
         # audio_file.play()
         return
     # Get the thieves current space valid moves list so we can temporarily modify it if needed
@@ -1208,33 +1215,22 @@ def thief_move(new_thief):
     if new_thief.get_previous_location() in valid_moves_list:
         valid_moves_list.remove(new_thief.get_previous_location())
     # If there is an available nearby crime space to move to, that must be the choice
-    for space_number in valid_moves_list:
-        if new_thief.get_space_type(space_number) == 'Crime':
-            new_location = space_number
-    # Randomly pick a new space to move to and move
-        else:
-            new_location = random.choice(valid_moves_list)
-    new_thief.add_move_to_list(new_location)
-    # Get space type and play appropiate sound effect
-    if new_thief.get_space_type(new_location) == "Crime":
-        audio_file = mixer.Sound(audio_files["Crime"])
-    elif new_thief.get_space_type(new_location) == "Floor":
-        audio_file = mixer.Sound(audio_files["Floor"])
-    elif new_thief.get_space_type(new_location) == "Door":
-        audio_file = mixer.Sound(audio_files["Door"])
-    elif new_thief.get_space_type(new_location) == "Window":
-        audio_file = mixer.Sound(audio_files["Window"])
-    elif new_thief.get_space_type(new_location) == "Street":
-        audio_file = mixer.Sound(audio_files["Street"])
-    elif new_thief.get_space_type(new_location) == "Subway":
-        audio_file = mixer.Sound(audio_files["Subway"])
-    # audio_file.play()
-    print("")
-    print("Thief move...")
     print("Valid Moves: " + str(valid_moves_list))
-    print("New space " + str(new_location))
-    message = "The Thief has moved to a " + new_thief.get_space_type(new_location) + ' space.'
-    sg.popup(message, title="Did not move", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
+    for space_number in valid_moves_list:
+        print("Space Type: " + str(new_thief.get_space_type(space_number)))
+        if new_thief.get_space_type(space_number) == 'Crime':
+            thief_new_location = space_number
+            print("Crime space detected, moving to: " + str(thief_new_location))
+        # Randomly pick a new space to move to and move
+        else:
+            thief_new_location = random.choice(valid_moves_list)
+    print("New space " + str(thief_new_location))
+    new_thief.add_space_to_history(thief_new_location)
+    # Get and play appropiate sound effect
+    # audio_file = mixer.Sound(audio_files[new_thief.get_space_type(thief_new_location)])
+    # audio_file.play()
+    message = "The Thief has moved to a " + new_thief.get_space_type(thief_new_location) + ' space.'
+    sg.popup(message, title="Thief move", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
     return
 
 
@@ -1247,7 +1243,7 @@ def get_tip(new_thief, player_number):
         [sg.Button('OK'), sg.Button('CANCEL')]
     ]
     get_tip_window = sg.Window("Tipster Hotline", get_tip_layout, enable_close_attempted_event=True).finalize()
-    audio_file = mixer.Sound(audio_files["Tipline"])
+    # audio_file = mixer.Sound(audio_files["Tipline"])
     # audio_file.play()
     while True:
         gui_event, gui_values = get_tip_window.read()
@@ -1257,7 +1253,7 @@ def get_tip(new_thief, player_number):
            get_tip_window.close()
            break
         if gui_event == 'OK':
-            audio_file = mixer.Sound(audio_files["Tip"])
+            # audio_file = mixer.Sound(audio_files["Tip"])
             # audio_file.play()
             message = "TIP RECEIVED! Thief exact location is: " + str(new_thief.get_current_space_number())
             sg.popup(message, title="TIP", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
@@ -1278,7 +1274,7 @@ def attempt_arrest(new_thief):
         [sg.Button('Submit'), sg.Button('Cancel')]
     ]
     attempt_arrest_window = sg.Window("Attempt Arrest", attempt_arrest_layout, enable_close_attempted_event=True).finalize()
-    audio_file = mixer.Sound(audio_files["Awaiting Input"])
+    # audio_file = mixer.Sound(audio_files["Awaiting Input"])
     # audio_file.play()
     while True:
         gui_event, gui_values = attempt_arrest_window.read()
@@ -1288,12 +1284,12 @@ def attempt_arrest(new_thief):
            attempt_arrest_window.close()
            break
         if gui_event == 'Submit':
-            audio_file = mixer.Sound(audio_files["Attempt Arrest"])
+            # audio_file = mixer.Sound(audio_files["Attempt Arrest"])
             # audio_file.play()
             arrest_space = int(gui_values['arrest_space'])
             if int(new_thief.get_current_space_number()) == int(arrest_space):
                 if random.randint(1, 100) < 95: # !!! need to figure out a good %
-                    audio_file = mixer.Sound(audio_files["Incorrect Location"])
+                    # audio_file = mixer.Sound(audio_files["Incorrect Location"])
                     # audio_file.play()
                     sg.popup("The Thief escaped your arrest attempt! They're getting away...", title="Escape Arrest", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
                     extra_moves = random.randint(5, 6)
@@ -1305,7 +1301,7 @@ def attempt_arrest(new_thief):
                     attempt_arrest_window.close()
                     return True
             else:
-                audio_file = mixer.Sound(audio_files["Incorrect Location"])
+                # audio_file = mixer.Sound(audio_files["Incorrect Location"])
                 # audio_file.play()
                 sg.popup("Wrong location, False Arrest, lose a turn", title="False Arrest", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
                 attempt_arrest_window.close()
