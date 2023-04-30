@@ -4,40 +4,6 @@ import random
 import sys
 
 
-# Audio setup
-mixer.init()
-audio_files = {
-    "Attempt Arrest": "audio_files\Attempt_Arrest.mp3",
-    "Awaiting Input": "audio_files\Awaiting_Input.mp3",
-    "Crime": "audio_files\Crime.mp3",
-    "Door": "audio_files\Door.mp3",
-    "Escape": "audio_files\Escape.mp3",
-    "Floor": "audio_files\Floor.mp3",
-    "Incorrect Location": "audio_files\Incorrect_Location.mp3",
-    "No_Movement": "audio_files\\No_Movement.mp3",
-    "Street": "audio_files\Street.mp3",
-    "Subway": "audio_files\Subway.mp3",
-    "Tip": "audio_files\Tip.mp3",
-    "Tipline": "audio_files\Tipline.mp3",
-    "Window": "audio_files\Window.mp3"
-}
-
-
-# Dictionary of thief names and wanted values
-thief_list = {
-    "Armand Slinger": 900,
-    "Bunny & Clod": 1000,
-    "Emil 'The Cat' Donovan": 800,
-    "Felicia Field": 900,
-    "Hans Offe": 900,
-    "John Doe": 800,
-    "Luke Warm": 1000,
-    "Ruby Diamond": 800,
-    "Saul Teen": 1000,
-    "The Brain": 1000,
-}
-
-
 # Create a dictionary of valid moves
 valid_moves_dict = {
     "0": {
@@ -961,8 +927,44 @@ valid_moves_dict = {
     },
 }
 
+
+# Audio setup
+mixer.init()
+audio_files = {
+    "Attempt Arrest": "audio_files\Attempt_Arrest.mp3",
+    "Awaiting Input": "audio_files\Awaiting_Input.mp3",
+    "Crime": "audio_files\Crime.mp3",
+    "Door": "audio_files\Door.mp3",
+    "Escape": "audio_files\Escape.mp3",
+    "Floor": "audio_files\Floor.mp3",
+    "Incorrect Location": "audio_files\Incorrect_Location.mp3",
+    "No_Movement": "audio_files\\No_Movement.mp3",
+    "Street": "audio_files\Street.mp3",
+    "Subway": "audio_files\Subway.mp3",
+    "Tip": "audio_files\Tip.mp3",
+    "Tipline": "audio_files\Tipline.mp3",
+    "Window": "audio_files\Window.mp3"
+}
+
+
+# Dictionary of thief names and wanted values
+thief_list = {
+    "Armand Slinger": 900,
+    "Bunny & Clod": 1000,
+    "Emil 'The Cat' Donovan": 800,
+    "Felicia Field": 900,
+    "Hans Offe": 900,
+    "John Doe": 800,
+    "Luke Warm": 1000,
+    "Ruby Diamond": 800,
+    "Saul Teen": 1000,
+    "The Brain": 1000,
+}
+
+
 # List of all Subway spaces (where Thief can 'teleport' around board)
 subway_spaces = ["500", "599", "699", "799", "899"]
+
 
 # List of all starting crime spaces (where a thief can begin)
 thief_starting_crime_spaces = ["123", "144", "146", "164", "242", "245", "247", "265", "267", "337", "352", "355", "376", "425", "445", "467", "463"]
@@ -1179,13 +1181,11 @@ def player_turn(new_thief, player_number):
             player_turn_window['clue used'].update(visible=True)
             player_turn_window['End Turn'].update(disabled=False)
             player_turn_window['end_turn_disabled'].update(visible=False)
-            # player_turn_window['Clue'].update(False)
             player_turn_window['End Turn'].update(True)
             player_turn_window['skip button'].update(visible=False)
             player_turn_window['skip text'].update(visible=False)
         elif gui_event == 'Submit' and gui_values['Clue'] and player_turn_window['clue used'].visible:
             thief_move(new_thief)
-            # player_turn_window['Clue'].update(False)
             player_turn_window['End Turn'].update(True)
             player_turn_window['skip button'].update(visible=False)
             player_turn_window['skip text'].update(visible=False)
@@ -1194,16 +1194,13 @@ def player_turn(new_thief, player_number):
             player_turn_window.hide()
             get_tip(new_thief, player_number)
             player_turn_window.un_hide()
-            # player_turn_window['Tip'].update(False)
             player_turn_window['End Turn'].update(True)
             player_turn_window['skip button'].update(visible=False)
             player_turn_window['skip text'].update(visible=False)
         # Player chooses to attempt an arrest
         if gui_event == 'Submit' and gui_values['Attempt Arrest']:
-            # player_turn_window.hide()
             player_turn_window.close()
             arrest_result = attempt_arrest(new_thief)
-            # player_turn_window.un_hide()
             if arrest_result == True:
                 return True
             else:
