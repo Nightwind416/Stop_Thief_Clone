@@ -25,10 +25,7 @@
 
 ## Video Demo
 
-[Stop Thief Digital Crime Scanner Demo](https://vimeo.com/manage/videos/####)
-<details><summary>Embedded Video</summary>
-<source src="https://vimeo.com/748393419">
-</details>
+[Stop Thief Digital Crime Scanner Demo](https://vimeo.com/748393419?share=copy)
 
 ## Description
 
