@@ -4,7 +4,7 @@ import random
 import sys
 
 
-# Create a dictionary of valid moves
+# Create a dictionary of valid thief moves
 valid_moves_dict = {
     "0": {
         "General Location": "None",
@@ -928,14 +928,12 @@ valid_moves_dict = {
 }
 
 
-# Audio setup
+# Audio file setup
 mixer.init()
 audio_files = {
-    "Attempt Arrest": "audio_files\Attempt_Arrest.mp3",
-    "Awaiting Input": "audio_files\Awaiting_Input.mp3",
+    "Attempt and Capture": "audio_files\Arrest_and_Capture.mp3",
     "Crime": "audio_files\Crime.mp3",
     "Door": "audio_files\Door.mp3",
-    "Escape": "audio_files\Escape.mp3",
     "Floor": "audio_files\Floor.mp3",
     "Incorrect Location": "audio_files\Incorrect_Location.mp3",
     "No_Movement": "audio_files\\No_Movement.mp3",
@@ -947,7 +945,7 @@ audio_files = {
 }
 
 
-# Dictionary of thief names and wanted values
+# Dictionary of thief names and starting wanted values
 thief_list = {
     "Armand Slinger": 900,
     "Bunny & Clod": 1000,
@@ -970,7 +968,7 @@ subway_spaces = ["500", "599", "699", "799", "899"]
 thief_starting_crime_spaces = ["123", "144", "146", "164", "242", "245", "247", "265", "267", "337", "352", "355", "376", "425", "445", "467", "463"]
 
 
-# Thief class - name, wanted value, captured status, additional crimes, current location
+# Thief class - move dictionary copy, name, wanted value, additional crimes, escapes, current location, history
 class Thief:
     # Initialize thief class
     def __init__(self, name, reward):
@@ -978,7 +976,7 @@ class Thief:
         self._name = name
         self._starting_reward = reward
         self._additional_crimes = -1 # Initial crime will bring this up to 0
-        self._succesful_escapes = 0
+        self._successful_escapes = 0
         self._move_history_space_numbers = []
         self._move_history_space_types = ""
     # Return the thief name
@@ -989,7 +987,7 @@ class Thief:
         return self._starting_reward
     # Return the total reward amount
     def get_total_reward(self):
-        return self._starting_reward + (self._additional_crimes * 100) + (self._succesful_escapes * 100)
+        return self._starting_reward + (self._additional_crimes * 100) + (self._successful_escapes * 100)
     # Increase crime count
     def increase_crime_count(self):
         self._additional_crimes += 1
@@ -998,18 +996,18 @@ class Thief:
         return self._additional_crimes
     # Increase escape count
     def increase_escape_count(self):
-        self._succesful_escapes += 1
+        self._successful_escapes += 1
     # Return escape count
     def get_escape_count(self):
-        return self._succesful_escapes
+        return self._successful_escapes
     # Return general starting location (Building Number)
     def get_general_starting_location(self):
         starting_building = self._move_dictionary[self._move_history_space_numbers[0]]["General Location"]
         return starting_building
-    # Return general location (Building/Street Number)
+    # Return general location (Building/Street Number) of given exact space
     def get_general_location(self, space_number):
         return self._move_dictionary[space_number]["General Location"]
-    # Return thief current space type
+    # Return space type
     def get_space_type(self, space_number):
         if self._move_dictionary[space_number]['Space Type'] == 'Crime_Committed':
             return 'Floor'
@@ -1026,14 +1024,15 @@ class Thief:
     # Return thief move history
     def get_move_history(self):
         return self._move_history_space_types
-    # Return valid thief moves
+    # Return valid thief moves based on given space
     def get_valid_moves(self, space_number):
         return self._move_dictionary[space_number]['Valid Moves']
-    # Add new general location to history
+    # Add new location to history
     def add_location_to_history(self, location):
         if len(self._move_history_space_numbers) == 1:
             self._move_history_space_types = self._move_history_space_types + location
             return
+        # Crime_Committed is for internal tracking, change to floor/street space for history recording
         if location == 'Crime_Committed':
             location = 'Floor'
         if location == 'Crime_Committed' and self.get_current_space_number() == 709:
@@ -1049,7 +1048,7 @@ class Thief:
         if location == 'Crime':
             self._move_dictionary[space_number]['Space Type'] = 'Crime_Committed'
             self._additional_crimes += 1
-        # Check if thief changed 'general' locations
+        # Check if thief changed 'general' locations (left the building)
         if self.get_general_location(space_number) != self.get_general_location(self._move_history_space_numbers[-1]):
             # reset any previously committed crime spaces if true
             for space_number in self._move_history_space_numbers:
@@ -1065,6 +1064,7 @@ class Thief:
 
 def main():
     while True:
+        sg.theme('Black')
         if sg.popup_yes_no('Would you like to begin a new game?') == 'Yes':
             # Set Main game menu PySimpleGUI themes and window layout
             sg.theme('Black')
@@ -1077,9 +1077,7 @@ def main():
                 [sg.Text("")],
                 [sg.Column([[sg.Text("How many human players?")]], justification='center')],
                 [sg.Column([[sg.Radio("2", "num_players", key='2'), sg.Radio("3", "num_players", key='3'), sg.Radio("4", "num_players", key='4')]], justification='center')],
-                [sg.Column([[sg.Button('Play Game'), sg.Button('Quit Game')]], justification='center')],
-                [sg.Text("")],
-                [sg.Column([[sg.Text("*all sounds are public domain")]], justification='right')]
+                [sg.Column([[sg.Button('Play Game'), sg.Button('Quit Game')]], justification='center')]
             ]
             game_menu_window = sg.Window("Game Menu", game_menu_layout, enable_close_attempted_event=True).finalize()
             while True:
@@ -1129,10 +1127,10 @@ def play_game(number_players):
     # Announce the general starting location for the thief and starting reward
     audio_file = mixer.Sound(audio_files["Crime"])
     audio_file.play()
-    line1 = ("A new thief named " + str(new_thief) + " has been detected committing a crime somehwere in " + new_thief.get_general_starting_location() + ".")
+    line1 = ("A new thief named " + str(new_thief) + " has been detected committing a crime somewhere in " + new_thief.get_general_starting_location() + ".")
     line2 = ("Their current arrest reward is: $" + str(new_thief.get_starting_reward()))
     message = line1 + "\n" + line2
-    sg.popup(message, title="New Thief Detected", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
+    sg.popup(message, title="New Thief Detected", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True, line_width=100)
     # Set the current player number to start with player 1
     player_number = 1
     # Players take turns until the thief is arrested
@@ -1146,17 +1144,16 @@ def play_game(number_players):
         # Reset to player 1 after last player turn
         if player_number > number_players:
             player_number = 1
-    return
 
 
 def player_turn(new_thief, player_number):
     # Set player turn menu PySimpleGUI themes and window layout
-    # sg.theme('Dark')
+    sg.theme('Black')
     starting_location = new_thief.get_general_starting_location()
     player_turn_layout = [
         [sg.Text(f"Current thief move history:          Thief started in {starting_location}" )],
         [sg.Multiline("Current thief move history : ", key='thief history', size=(100, 5))],
-        [sg.Text("Debug history : ", key='debug history')],
+        [sg.Text("Debug history : ", key='debug history', visible=False)],
         [sg.Text("Player ???, it is your turn. What would you like to do?", key='player number')],
         [sg.Text("You used your free clue this turn, only select 'Clue' if you are allowed another clue on your same turn.", visible=False, key='clue used')],
         [sg.Radio("Clue", "choice", key='Clue', default=True), sg.Radio("Tip", "choice", key='Tip'), sg.Radio("Attempt Arrest", "choice", key='Attempt Arrest'), sg.Radio("End Turn", "choice", key='End Turn', disabled=True)],
@@ -1170,6 +1167,8 @@ def player_turn(new_thief, player_number):
         player_turn_window['debug history'].update(new_thief.get_move_history_spaces())
         player_turn_window.refresh()
         gui_event, gui_values = player_turn_window.read()
+        if len(sys.argv) > 1 and sys.argv[1] == "debug":
+            player_turn_window['debug history'].update(visible=True)
         if (gui_event == sg.WINDOW_CLOSE_ATTEMPTED_EVENT or gui_event == 'Exit') and sg.popup_yes_no('Do you really want to exit the game?') == 'Yes':
             sys.exit()
         if gui_event == 'Submit' and not (gui_values['Clue'] or gui_values['Tip'] or gui_values['Attempt Arrest']or gui_values['End Turn']):
@@ -1191,20 +1190,23 @@ def player_turn(new_thief, player_number):
             player_turn_window['skip text'].update(visible=False)
         # Player chooses to get a tip
         if gui_event == 'Submit' and gui_values['Tip']:
-            player_turn_window.hide()
             get_tip(new_thief, player_number)
-            player_turn_window.un_hide()
             player_turn_window['End Turn'].update(True)
             player_turn_window['skip button'].update(visible=False)
             player_turn_window['skip text'].update(visible=False)
         # Player chooses to attempt an arrest
         if gui_event == 'Submit' and gui_values['Attempt Arrest']:
-            player_turn_window.close()
+            player_turn_window.hide()
             arrest_result = attempt_arrest(new_thief)
             if arrest_result == True:
+                player_turn_window.close()
+                audio_file = mixer.Sound(audio_files["Attempt and Capture"])
+                audio_file.play()
                 return True
             else:
+                player_turn_window.un_hide()
                 player_turn_window['Attempt Arrest'].update(False)
+                new_thief.increase_escape_count()
                 return
         # Player chooses to end their turn
         if gui_event == 'Submit' and gui_values['End Turn']:
@@ -1216,15 +1218,13 @@ def player_turn(new_thief, player_number):
                return
             else:
                 continue
-    player_turn_window.close()
-    return
 
 
 def thief_move(new_thief):
-    print("")
-    print("Thief move...")
+    debug_print("")
+    debug_print("Thief move...")
     thief_current_location = new_thief.get_current_space_number()
-    print("Thief current space: " + str(thief_current_location))
+    debug_print("Thief current space: " + str(thief_current_location))
     thief_new_location = 0
     # Random chance thief does not move
     if random.randint(1, 100) < 5: # !!! need to figure out a good %
@@ -1238,59 +1238,57 @@ def thief_move(new_thief):
     if new_thief.get_previous_location() in valid_moves_list:
         valid_moves_list.remove(new_thief.get_previous_location())
     # If there is an available nearby crime space to move to, that must be the choice to move to
-    print("Valid Moves: " + str(valid_moves_list))
+    debug_print("Valid Moves: " + str(valid_moves_list))
     for space_number in valid_moves_list:
-        print("Space Type: " + str(new_thief.get_space_type(space_number)))
+        debug_print("Space Type: " + str(new_thief.get_space_type(space_number)))
         if new_thief.get_space_type(space_number) == 'Crime':
             thief_new_location = space_number
-            print("Crime space detected, moving to: " + str(thief_new_location))
+            debug_print("Crime space detected, moving to: " + str(thief_new_location))
             break
     # Randomly pick a new space to move to and move, if did not find a nearby crime space
     if thief_new_location == 0:
         # Check if thief current space is a Subway space to trigger special move rule
         if new_thief.get_space_type(thief_current_location) == 'Subway' and new_thief.get_space_type(new_thief.get_previous_location()) != 'Subway':
-            print("Current space is a subway and did not previously ride, chance to ride the subway")
+            debug_print("Current space is a subway and did not previously ride, chance to ride the subway")
             move_lists = [valid_moves_list, subway_spaces]
             valid_moves_list = random.choice(move_lists)
             thief_new_location = random.choice(valid_moves_list)
-            print("Choosing random valid move from: " + str(valid_moves_list))
+            debug_print("Choosing random valid move from: " + str(valid_moves_list))
         # Choose a random valid move
         else:
             thief_new_location = random.choice(valid_moves_list)
-            print("Choosing random valid move from: " + str(valid_moves_list))
-    print("New space " + str(thief_new_location))
-    # Get and play appropiate sound effect
+            debug_print("Choosing random valid move from: " + str(valid_moves_list))
+    debug_print("New space " + str(thief_new_location))
+    # Get and play appropriate sound effect
     audio_file = mixer.Sound(audio_files[new_thief.get_space_type(thief_new_location)])
     audio_file.play()
     message = "The Thief has moved to a " + new_thief.get_space_type(thief_new_location) + ' space.'
-    sg.popup(message, title="Thief move", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
+    sg.popup(message, title="Thief move", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True, line_width=100)
     new_thief.add_space_to_history(thief_new_location)
     return
 
 
 def get_tip(new_thief, player_number):
     # Set tip menu PySimpleGUI themes and window layout
-    # sg.theme('Dark')
+    sg.theme('Black')
     get_tip_layout = [
         [sg.Text("Warning, the TIP you are about to receive is for player " + str(player_number) + "'s eyes ONLY!")],
         [sg.Text("Press 'OK' to receive the TIP or press 'CANCEL' to return to the previous screen")],
         [sg.Button('OK'), sg.Button('CANCEL')]
     ]
     get_tip_window = sg.Window("Tipster Hotline", get_tip_layout, enable_close_attempted_event=True).finalize()
-    audio_file = mixer.Sound(audio_files["Tipline"])
-    audio_file.play()
     while True:
-        gui_event, gui_values = get_tip_window.read()
-        if (gui_event == sg.WINDOW_CLOSE_ATTEMPTED_EVENT or gui_event == 'Exit') and sg.popup_yes_no('Do you really want to exit the game?') == 'Yes':
-            sys.exit()
+        gui_event, gui_values  = get_tip_window.read()
+        if (gui_event == sg.WINDOW_CLOSE_ATTEMPTED_EVENT or gui_event == 'Exit') and sg.popup_yes_no('Are you sure you want to close the tip window?') == 'Yes':
+            break
         if gui_event == 'CANCEL':
-           get_tip_window.close()
            break
         if gui_event == 'OK':
-            audio_file = mixer.Sound(audio_files["Tip"])
+            get_tip_window.close()
+            audio_file = mixer.Sound(audio_files["Tipline"])
             audio_file.play()
-            message = "TIP RECEIVED! Thief is currently in " + str(new_thief.get_general_location(new_thief.get_current_space_number())) + " on space number " + str(new_thief.get_current_space_number())
-            sg.popup(message, title="TIP", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
+            message = "TIP RECEIVED!\nThief is currently in " + str(new_thief.get_general_location(new_thief.get_current_space_number())) + " on space number " + str(new_thief.get_current_space_number())
+            sg.popup(message, title="TIP", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True, line_width=100)
             break
     get_tip_window.close()
     return
@@ -1298,7 +1296,7 @@ def get_tip(new_thief, player_number):
 
 def attempt_arrest(new_thief):
     # Set arrest attempt menu PySimpleGUI themes and window layout
-    # sg.theme('Dark')
+    sg.theme('Black')
     attempt_arrest_layout = [
         [sg.Text("Indicate where you would like to attempt to make an arrest...")],
         [sg.Text("Example 1: For Building 1 Space 23 you would enter: 123")],
@@ -1308,8 +1306,6 @@ def attempt_arrest(new_thief):
         [sg.Button('Submit'), sg.Button('Cancel')]
     ]
     attempt_arrest_window = sg.Window("Attempt Arrest", attempt_arrest_layout, enable_close_attempted_event=True).finalize()
-    audio_file = mixer.Sound(audio_files["Awaiting Input"])
-    audio_file.play()
     while True:
         gui_event, gui_values = attempt_arrest_window.read()
         if (gui_event == sg.WINDOW_CLOSE_ATTEMPTED_EVENT or gui_event == 'Exit') and sg.popup_yes_no('Do you really want to exit the game?') == 'Yes':
@@ -1318,13 +1314,9 @@ def attempt_arrest(new_thief):
            attempt_arrest_window.close()
            break
         if gui_event == 'Submit':
-            audio_file = mixer.Sound(audio_files["Attempt Arrest"])
-            audio_file.play()
             arrest_space = int(gui_values['arrest_space'])
             if int(new_thief.get_current_space_number()) == int(arrest_space):
                 if random.randint(1, 100) < 15: # !!! need to figure out a good %
-                    audio_file = mixer.Sound(audio_files["Escape"])
-                    audio_file.play()
                     sg.popup("The Thief escaped your arrest attempt! They're getting away...", title="Escape Arrest", button_color="white on blue", font=("Helvetica", 12), keep_on_top=True)
                     extra_moves = random.randint(5, 6)
                     for i in range(extra_moves):
@@ -1341,6 +1333,10 @@ def attempt_arrest(new_thief):
                 attempt_arrest_window.close()
                 return False
 
+
+def debug_print(message):
+    if len(sys.argv) > 1 and sys.argv[1] == "debug":
+        print(message)
 
 if __name__ == "__main__":
     main()
